@@ -55,6 +55,7 @@ function createHost({ global, policies = new Map() }) {
       get: (id) => sessions.get(id)?.agent,
     },
     sessions: { get: (id) => sessions.get(id) },
+    get: (name) => name === 'settings' ? ctx.settings : undefined,
     subagents: {
       resolveMaxDepth: () => 1,
       getProvider: (name) => ({
@@ -284,4 +285,80 @@ test('全局写入保留旧 default，关闭后的 active=null 不会被默认�
   assert.equal(first.policy.enabled, false);
   assert.equal(second.policy.enabled, false);
   assert.equal(second.defaultSetting.snapshot.name, '全局默认');
+});
+
+test('strategy.save 支持 poolAdditions 原子入池，未入池模型随策略一次性落盘', async () => {
+  const host = createHost({ global: { revision: 1, default: autoDefault() } });
+  const agent = host.addSession('root');
+  await applyWithPackageMeta(host.ctx, {});
+  const result = await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({
+      action: 'strategy.save', expectedRevision: 1,
+      strategy: { name: '自动入池策略', type: 'auto', models: [GLM, CLAUDE], fixedProvider: '', fixedModel: '', strategyText: '' },
+      poolAdditions: [{ provider: CLAUDE.provider, model: CLAUDE.model, purpose: '', note: '', effort: '' }],
+    }),
+    signal: new AbortController().signal,
+  });
+  assert.equal(result.kind, 'success', result.text);
+  const library = host.getGlobal().library;
+  assert.equal(library.pool.length, 2);
+  assert.deepEqual(library.pool.map((row) => row.model), ['GLM-5.3', 'claude-opus-5']);
+  const created = library.strategies.find((row) => row.name === '自动入池策略');
+  assert.ok(created, '应创建自动入池策略');
+  assert.equal(created.models.length, 2);
+});
+
+test('strategy.save 的 poolAdditions 在池满 200 时明确报错，不静默截断', async () => {
+  const bigPool = Array.from({ length: 200 }, (_, i) => ({ provider: 'iflytek-openai', model: `model-${i}`, purpose: '', note: '' }));
+  const host = createHost({ global: { revision: 1, default: autoDefault(), library: { version: 1, strategies: [], pool: bigPool, limits: null, active: null } } });
+  const agent = host.addSession('root');
+  await applyWithPackageMeta(host.ctx, {});
+  const result = await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({
+      action: 'strategy.save', expectedRevision: 1,
+      strategy: { name: '超池策略', type: 'auto', models: [CLAUDE], fixedProvider: '', fixedModel: '', strategyText: '' },
+      poolAdditions: [{ provider: CLAUDE.provider, model: CLAUDE.model, purpose: '', note: '', effort: '' }],
+    }),
+    signal: new AbortController().signal,
+  });
+  assert.equal(result.kind, 'error');
+  assert.match(result.text, /最多 200 个模型/);
+});
+
+test('savePool 删除默认快照引用的模型会被拒绝', async () => {
+  const host = createHost({ global: { revision: 1, default: autoDefault(), library: { version: 1, strategies: [{ id: 'global-auto', name: '全局默认', type: 'auto', models: [GLM], fixedProvider: '', fixedModel: '', strategyText: '', version: 1 }], pool: [{ ...GLM, name: 'GLM-5.3', purpose: '', note: '' }], limits: null, active: null } } });
+  const agent = host.addSession('root');
+  await applyWithPackageMeta(host.ctx, {});
+  const result = await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({ action: 'pool.save', expectedRevision: 1, pool: [] }),
+    signal: new AbortController().signal,
+  });
+  assert.equal(result.kind, 'error');
+  assert.match(result.text, /新会话默认.*仍引用/);
+});
+
+test('persistUnified 会把池说明与限制回灌到默认快照', async () => {
+  const host = createHost({ global: { revision: 1, default: autoDefault() } });
+  const agent = host.addSession('root');
+  await applyWithPackageMeta(host.ctx, {});
+  await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({ action: 'pool.note', expectedRevision: 1, provider: GLM.provider, model: GLM.model, purpose: '代码主力', note: '仅开发', effort: 'max' }),
+    signal: new AbortController().signal,
+  });
+  const limitResult = await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({ action: 'limits.save', expectedRevision: 2, limits: { maxDepth: 1, maxActive: 8 } }),
+    signal: new AbortController().signal,
+  });
+  assert.equal(limitResult.kind, 'success', limitResult.text);
+  const def = host.getGlobal().default;
+  const info = def.modelsInfo.find((row) => row.model === GLM.model);
+  assert.equal(info.purpose, '代码主力');
+  assert.equal(info.note, '仅开发');
+  assert.equal(info.effort, 'max');
+  assert.deepEqual(def.limits, { maxDepth: 1, maxActive: 8 });
 });

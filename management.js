@@ -90,6 +90,20 @@ export function readPoolEntries(raw, field = '模型池') {
   });
 }
 
+/**
+ * 校验 strategy.save 附带的 poolAdditions（未入池但已授权的候选模型）。
+ * 允许省略整个字段或传空数组；非数组、超长或含未知字段时直接失败。
+ *
+ * @param {unknown} raw 命令请求里的 poolAdditions 字段。
+ * @returns {Array<object>} 规范化后的新增池条目（可能为空数组）。
+ */
+export function readPoolAdditions(raw) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) fail('poolAdditions 必须是数组');
+  if (raw.length > MAX_MODELS) fail('poolAdditions 最多 200 项');
+  return readPoolEntries(raw, '自动入池模型');
+}
+
 /** Validate a strategy form. Type is restricted to the two page types. */
 export function readStrategyDraft(raw, field = '策略') {
   requestObject(raw, ['id', 'name', 'type', 'models', 'fixedProvider', 'fixedModel', 'strategyText'], field);
@@ -590,9 +604,9 @@ export function validateForUse(strategy, pool, limits, { authorized, available, 
       fail(`已保存的最大递归深度 ${limits?.maxDepth} 超出宿主上限 ${Math.min(32, ceiling)}；请先在模型池调整并保存`);
     }
     assertHostActive(limits.maxActive, { maxActive: hostActive, maxActiveKnown: hostActiveKnown, maxActiveReason: hostActiveReason });
-  } else if (!hostActiveKnown) {
-    fail(`无法确认宿主并发子智能体数量${hostActiveReason ? `（${hostActiveReason}）` : ''}；已拒绝保存/启用`);
   }
+  // 未设置本地限制时，即使宿主并发上限未知也不阻断启用：
+  // 宿主仍会执行自身的 maxActiveSubagents，本地校验按 PLUGIN_MAX_ACTIVE 兜底。
   // A legacy fixed strategy may keep several candidates; its target is not
   // required to be the first route, only to be present.
   if (strategy.type === 'fixed' && !strategy.models.some((route) => sameRoute(route, { provider: strategy.fixedProvider, model: strategy.fixedModel }))) fail('固定模型必须来自策略中选择的模型');
@@ -739,7 +753,7 @@ export function importDefault(value, { now = Date.now(), id, defaultRevision = n
 }
 
 /** Pool save validation: additions need live Host authorization/availability. */
-export function validatePoolSave(nextPool, previousPool, activeSnapshot, { authorized, available }) {
+export function validatePoolSave(nextPool, previousPool, activeSnapshot, { authorized, available, defaultSnapshot = null }) {
   const prevKeys = new Set(previousPool.map(routeKey));
   const auth = new Set((authorized || []).map(routeKey));
   const avail = new Set((available || []).map(routeKey));
@@ -750,11 +764,18 @@ export function validatePoolSave(nextPool, previousPool, activeSnapshot, { autho
       if (!avail.has(key)) fail(`不能把当前不可用的模型加入会话池：${entry.provider}/${entry.model}`);
     }
   }
+  const nextKeys = new Set(nextPool.map(routeKey));
   if (activeSnapshot) {
-    const nextKeys = new Set(nextPool.map(routeKey));
     const referenced = (activeSnapshot.models || []).filter((route) => !nextKeys.has(routeKey(route)));
     if (referenced.length) {
       fail(`无法保存：当前启用策略生效中的内容「${activeSnapshot.name}」仍引用 ${referenced.map((route) => `${route.provider}/${route.model}`).join('、')}；请先调整该策略或关闭策略`);
+    }
+  }
+  // 默认快照也受删除保护：新会话默认引用的模型不能从全局池里被静默删掉。
+  if (defaultSnapshot) {
+    const referenced = (defaultSnapshot.models || []).filter((route) => !nextKeys.has(routeKey(route)));
+    if (referenced.length) {
+      fail(`无法保存：新会话默认「${defaultSnapshot.name}」仍引用 ${referenced.map((route) => `${route.provider}/${route.model}`).join('、')}；请先更改或清除新会话默认`);
     }
   }
   return true;

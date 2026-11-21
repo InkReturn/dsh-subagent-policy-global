@@ -5,7 +5,7 @@ import { defaults, validatePolicy, renderContext, selectRoute, checkAdmission, s
 import {
   readLibrary, readDefault, legacyLibrary, materializeLegacy, emptyLibrary, buildPolicy,
   snapshotForStrategy, sameSnapshotContent, sameStrategyContent, readStrategyDraft,
-  readPoolEntries, validateStrategyRefs, assertStrategyNameFree, validateForUse,
+  readPoolEntries, readPoolAdditions, validateStrategyRefs, assertStrategyNameFree, validateForUse,
   validatePoolSave, defaultFromStrategy, importDefault, strategyNeedsAdjust,
   validateDefaultRefs,
   limitsConflict, readRoutes, LEGACY_STRATEGY_ID, LEGACY_INHERIT_ID,
@@ -265,8 +265,17 @@ export async function applyWithPackageMeta(ctx, packageMeta) {
     const global = globalState();
     // 1. 从当前视图取版本，避免两个会话用各自旧版本号互相覆盖。
     const revision = record.revision + 1;
-    // 2. 展开旧全局记录，保留 default，再替换统一策略与库。
-    await domain.global.set({ ...global, revision, policy, library });
+    // 2. 默认快照随全局库一起回灌：池条目说明/思考强度、并发限制都同步到默认，
+    // 避免“当前会话已生效、默认快照仍冻结旧值”的单向漂移。
+    let nextDefault = global.default;
+    if (nextDefault) {
+      nextDefault = {
+        ...refreshSnapshotInfo(nextDefault, library.pool),
+        limits: library.limits ? { ...library.limits } : nextDefault.limits,
+      };
+    }
+    // 3. 展开旧全局记录，保留 default，再替换统一策略与库。
+    await domain.global.set({ ...global, revision, policy, library, default: nextDefault });
   }
   function recordView(id, agent) {
     // 1. 有全局默认或全局库时，所有会话都走同一视图，不再读会话副本。
@@ -339,16 +348,27 @@ export async function applyWithPackageMeta(ctx, packageMeta) {
     };
   }
   // Resolve display names/availability for every route this session knows about.
+  const catalogCache = new Map();
+  const CATALOG_TTL_MS = 60_000;
   async function modelCatalog(agent, library, authz, signal) {
+    const now = Date.now();
     const routes=new Map();
     const add=list=>{for(const route of list||[]) if(route?.provider && route?.model) routes.set(routeKey(route),{provider:route.provider,model:route.model});};
     add(authz.routes); add(library?.pool); add(library?.strategies?.flatMap(s=>s.models)); add(library?.active?.snapshot?.models);
     const allowed=new Set(authz.routes.map(routeKey));
     const resolve=routeResolver(signal);
     await Promise.all([...routes.values()].map(async route=>{
-      const row=await resolve(route);
-      row.authorized=allowed.has(routeKey(route));
-      routes.set(routeKey(route),row);
+      const key=routeKey(route);
+      const cached=catalogCache.get(key);
+      let row;
+      if(cached && now-cached.at<CATALOG_TTL_MS) {
+        row={...cached.row};
+      } else {
+        row=await resolve(route);
+        catalogCache.set(key,{row,at:now});
+      }
+      row.authorized=allowed.has(key);
+      routes.set(key,row);
     }));
     return routes;
   }
@@ -519,6 +539,23 @@ export async function applyWithPackageMeta(ctx, packageMeta) {
       const existing=draft.id ? library.strategies.find(strategy=>strategy.id===draft.id) : null;
       if(draft.id && !existing) fail(`策略不存在：${draft.id}`);
       assertStrategyNameFree(library,draft.name,draft.id);
+      // 原子入池：策略引用的未入池模型随本次 strategy.save 在同一 mutate 事务里并入全局池。
+      const additions=readPoolAdditions(request.poolAdditions);
+      if(additions.length) {
+        const existingKeys=new Set(library.pool.map(routeKey));
+        const unique=additions.filter(entry=>!existingKeys.has(routeKey(entry)));
+        if(library.pool.length+unique.length>200) fail('模型池最多 200 个模型，请先精简后再保存策略');
+        if(unique.length) {
+          const available=await availabilityOf(unique,innerSignal);
+          const availableKeys=new Set([...available].map(routeKey));
+          for(const entry of unique) {
+            if(!availableKeys.has(routeKey(entry))) fail(`模型当前不可用，不能加入全局池：${entry.provider}/${entry.model}`);
+          }
+          await assertEffortSupport(unique,innerSignal);
+          library.pool=[...library.pool,...unique];
+          if(library.active) library.active={...library.active,snapshot:refreshSnapshotInfo(library.active.snapshot,library.pool)};
+        }
+      }
       validateStrategyRefs(draft,library.pool,existing);
       const changed=!existing || !sameStrategyContent(existing,draft);
       const isActive=!!(existing && library.active && library.active.strategyId===existing.id);
@@ -621,20 +658,24 @@ export async function applyWithPackageMeta(ctx, packageMeta) {
     const targets = (entries || []).filter(entry => typeof entry.effort === 'string' && entry.effort);
     if (!targets.length) return;
     const resolve = routeResolver(signal);
-    // 2. 逐个用宿主元数据核对等级 id，未知等级直接拒绝而不是静默降级。
-    for (const entry of targets) {
+    // 2. 并行用宿主元数据核对等级 id，未知等级直接拒绝而不是静默降级。
+    await Promise.all(targets.map(async entry => {
       const row = await resolve(entry);
       if (!row.available) fail(`无法读取 ${entry.provider}/${entry.model} 的思考强度，暂时不能保存该等级`);
       const ids = (row.reasoning?.efforts || []).map(effort => effort.id);
       if (!ids.includes(entry.effort)) fail(`${entry.provider}/${entry.model} 不支持思考强度「${entry.effort}」`);
-    }
+    }));
   }
   async function savePool(agent, request, signal) {
     return mutate(agent, request, async ({library,signal:innerSignal})=>{
       const next=readPoolEntries(request.pool);
       const authz=hostAuth(agent);
-      const available=await availabilityOf(next,innerSignal);
-      validatePoolSave(next,library.pool,library.active?library.active.snapshot:null,{authorized:authz.routes,available:[...available]});
+      // 可用性只校验新增项，避免每次保存模型池都全量解析 90+ 模型。
+      const prevKeys=new Set(library.pool.map(routeKey));
+      const additions=next.filter(entry=>!prevKeys.has(routeKey(entry)));
+      const available=await availabilityOf(additions,innerSignal);
+      const defaultSnapshot=globalState().default || null;
+      validatePoolSave(next,library.pool,library.active?library.active.snapshot:null,{authorized:authz.routes,available:[...available],defaultSnapshot});
       // 池里的思考强度属于可执行配置，写入前必须被宿主元数据确认。
       await assertEffortSupport(next,innerSignal);
       library.pool=next;
@@ -858,7 +899,7 @@ export async function applyWithPackageMeta(ctx, packageMeta) {
             rejectUnknown(request,action==='save'?['action','expectedRevision','policy']:['action','expectedRevision']);
             value=await saveLegacy(inv.agent,request,action==='reset',inv.signal);
           } else if(action==='strategy.save') {
-            rejectUnknown(request,['action','expectedRevision','strategy']);
+            rejectUnknown(request,['action','expectedRevision','strategy','poolAdditions']);
             value=await saveStrategy(inv.agent,request,{signal:inv.signal});
           } else if(action==='strategy.enable') {
             rejectUnknown(request,['action','expectedRevision','id']);
@@ -894,7 +935,11 @@ export async function applyWithPackageMeta(ctx, packageMeta) {
           }
         }
         return {kind:'success',text:JSON.stringify(value)};
-      } catch(error){return {kind:'error',text:error instanceof SyntaxError?'策略请求不是合法 JSON':String(error.message ?? error)};}
+      } catch(error){
+        const message=error instanceof SyntaxError?'策略请求不是合法 JSON':String(error.message ?? error);
+        const code=/版本冲突|默认版本冲突|revision|conflict/i.test(message)?'revision-conflict':'error';
+        return {kind:'error',text:JSON.stringify({code,message})};
+      }
     }});
   ctx.tools.register({name:'subagent_policy',description:'Read the current session subagent policy, exact authorized routes, model usage notes, injection preview and execution evidence. Does not change policy.',parameters:{type:'object',properties:{},additionalProperties:false},
     output:{schema:{type:'object',additionalProperties:true},render},execute:(_args,exec)=>snapshot(exec.agent)});

@@ -17,10 +17,10 @@ window.__ModuleLoader__.load({
       conflict: 'Version conflict', conflictHelp: 'The server has a newer revision. Your draft is preserved. Load the server version to continue.', loadServer: 'Load server version', mustRefresh: 'Refresh is required before another write.',
       readOnly: 'This session cannot edit the policy. The inherited snapshot is read-only.', noSession: 'Select a session to view its policy.', noSnapshot: 'No policy snapshot loaded.',
       navLabel: 'Policy management pages', pageSession: 'This session', pageStrategies: 'Global settings', pageModels: 'Model pool', pageRecords: 'Execution insights',
-      sessionPickHint: 'Pick which strategy this session uses. To create, edit, delete strategies or set the global default, go to the strategy library.',
-      sessionTitle: 'Strategy switch', policyLabelOn: 'Strategy switch: enabled', policyLabelOff: 'Strategy switch: not enabled',
-      closedSummary: 'Not enabled; the Host default applies (usually follows the parent model).',
-      activeLine: 'Enabled “{name}” · {type} · {target}', targetFixed: '{name}', targetAuto: '{count} candidates',
+      sessionPickHint: 'Pick which strategy is enabled globally (shared by all sessions). To create, edit, delete strategies or set the new-session default, go to Global settings.',
+      sessionTitle: 'Global strategy switch', policyLabelOn: 'Global strategy switch: enabled', policyLabelOff: 'Global strategy switch: not enabled',
+      closedSummary: 'Not enabled globally; the Host default applies (usually follows the parent model).',
+      activeLine: 'Enabled globally “{name}” · {type} · {target}', targetFixed: '{name}', targetAuto: '{count} candidates',
       strategies: 'Strategies', countSuffix: '{count} saved', newStrategy: 'New strategy', emptyStrategies: 'No strategies yet. Create one.',
       activeBadge: 'Currently enabled', defaultBadge: 'New-session default', defaultStaleBadge: 'New-session default (source not updated)', adjustBadge: 'Needs adjustment', stateOff: 'Not enabled',
       legacyBadge: 'Legacy follow (read-only)', legacyHint: 'This legacy strategy followed the parent model. Saving it as fixed or Agent-chosen converts it explicitly.',
@@ -41,7 +41,7 @@ window.__ModuleLoader__.load({
       guideRulesHint: 'Rules match top-down; the first hit wins. Models inside a rule are tried in the listed order.',
       guideScenePlaceholder: 'Task scene, e.g. development / polishing', guidePickModel: '+ Pick models', guidePickerHint: 'Multi-select from the candidate subset; check order = priority.',
       guideAddRule: '+ Add rule', guideFallback: 'Fallback (no rule matches)', guidePreview: 'Injection preview', guidePreviewHint: 'This exact text is stored and injected as the selection note.',
-      guideMoveUp: 'Move rule up', guideMoveDown: 'Move rule down', guideRemoveRule: 'Delete rule', guideRemoveModel: 'Remove model', guideOrder: 'Priority {order}',
+      guideMoveUp: 'Move rule up', guideMoveDown: 'Move rule down', guideRemoveRule: 'Delete rule', guideRemoveModel: 'Remove model', guideOrder: 'Priority {order}', guideRuleOutsideSubset: 'Some rules reference models outside the candidate subset.',
       saveStrategy: 'Save strategy', discard: 'Discard changes', cancelEdit: 'Cancel',
       formError: 'Correct the marked fields before saving.', errNameEmpty: 'Enter a strategy name.', errNameLong: 'The strategy name is too long.', errNameDup: 'Another strategy already uses this name.',
       errFixed: 'Select one fixed model.', errModels: 'Select at least one candidate.', errText: 'The selection note is too long.',
@@ -138,11 +138,11 @@ window.__ModuleLoader__.load({
       conflict: '版本冲突', conflictHelp: '服务端已有新版本，本地草稿已保留。载入服务端版本后可继续。', loadServer: '载入服务端版本', mustRefresh: '再次写入前需要先刷新确认。',
       readOnly: '当前会话无权编辑策略，继承的快照为只读。', noSession: '请选择会话后查看策略。', noSnapshot: '尚未读取策略快照。',
       navLabel: '策略管理页面', pageSession: '当前会话', pageStrategies: '全局设置', pageModels: '模型池', pageRecords: '执行洞察',
-      sessionPickHint: '在这里选择本会话启用哪份策略；新增、编辑、删除策略和全局默认在「全局设置」页。',
+      sessionPickHint: '选择全局启用哪份策略（所有会话共用）；新增、编辑、删除策略和新会话默认在「全局设置」页。',
       selectVisible: '选中当前筛选',
-      sessionTitle: '策略开关', policyLabelOn: '策略开关：已启用', policyLabelOff: '策略开关：未启用',
-      closedSummary: '未启用；按宿主默认（通常跟随父模型）。',
-      activeLine: '已启用「{name}」· {type} · {target}', targetFixed: '{name}', targetAuto: '{count} 个候选',
+      sessionTitle: '全局策略开关', policyLabelOn: '全局策略开关：已启用', policyLabelOff: '全局策略开关：未启用',
+      closedSummary: '全局未启用；按宿主默认（通常跟随父模型）。',
+      activeLine: '全局已启用「{name}」· {type} · {target}', targetFixed: '{name}', targetAuto: '{count} 个候选',
       strategies: '策略池', countSuffix: '{count} 份', newStrategy: '新增策略', emptyStrategies: '暂无策略。可新增一份。',
       activeBadge: '当前启用', defaultBadge: '新会话默认', defaultStaleBadge: '新会话默认（来源未更新）', adjustBadge: '需调整', stateOff: '未启用',
       legacyBadge: '旧版跟随（只读）', legacyHint: '该旧版策略跟随父模型；保存为固定或 Agent 自选即为显式转换。',
@@ -163,7 +163,7 @@ window.__ModuleLoader__.load({
       guideRulesHint: '规则从上到下匹配，命中即停；同一规则内按列出顺序优先。',
       guideScenePlaceholder: '任务场景，例如：开发 / 润色', guidePickModel: '＋ 选模型', guidePickerHint: '在候选子集内多选；勾选顺序 = 优先级顺序。',
       guideAddRule: '＋ 添加规则', guideFallback: '兜底（无规则命中时）', guidePreview: '注入预览', guidePreviewHint: '保存并注入给子会话的就是这段文本。',
-      guideMoveUp: '上移规则', guideMoveDown: '下移规则', guideRemoveRule: '删除规则', guideRemoveModel: '移除模型', guideOrder: '优先 {order}',
+      guideMoveUp: '上移规则', guideMoveDown: '下移规则', guideRemoveRule: '删除规则', guideRemoveModel: '移除模型', guideOrder: '优先 {order}', guideRuleOutsideSubset: '部分规则引用的模型不在候选子集内，请移除或重新勾选。',
       saveStrategy: '保存策略', discard: '放弃修改', cancelEdit: '取消',
       formError: '请修正标记的字段后再保存。', errNameEmpty: '请填写策略名称。', errNameLong: '策略名称过长。', errNameDup: '已有同名策略，请换一个名称。',
       errFixed: '请选择一个固定模型。', errModels: '至少勾选一个候选模型。', errText: '选择说明过长。',
@@ -698,7 +698,7 @@ window.__ModuleLoader__.load({
 
           const draftsFrom = useCallback((snap) => {
             if (!snap) return { poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, detail: null };
-            const entries = new Map(snap.management.pool.map((entry) => [keyOf(entry), { provider: entry.provider, model: entry.model, purpose: entry.purpose || '', note: entry.note || '' }]));
+            const entries = new Map(snap.management.pool.map((entry) => [keyOf(entry), { provider: entry.provider, model: entry.model, purpose: entry.purpose || '', note: entry.note || '', effort: entry.effort || '' }]));
             const limits = snap.management.limits;
             return {
               poolDraft: { keys: new Set(entries.keys()), entries },
@@ -811,11 +811,11 @@ window.__ModuleLoader__.load({
                 if (reset.model) {
                   const currentModel = state.modelDraft;
                   const entry = currentModel ? snap.management.pool.find((row) => sameRoute(row, currentModel)) : null;
-                  patch.modelDraft = entry ? { ...entry, name: entry.name || entry.model, purpose: entry.purpose || '', note: entry.note || '', dirty: false } : null;
+                  patch.modelDraft = entry ? { ...entry, name: entry.name || entry.model, purpose: entry.purpose || '', note: entry.note || '', effort: entry.effort || '', dirty: false } : null;
                   if (!entry) patch.detail = null;
                   else if (state.poolDraft) {
                     const entries = new Map(state.poolDraft.entries);
-                    entries.set(keyOf(entry), { provider: entry.provider, model: entry.model, purpose: entry.purpose || '', note: entry.note || '' });
+                    entries.set(keyOf(entry), { provider: entry.provider, model: entry.model, purpose: entry.purpose || '', note: entry.note || '', effort: entry.effort || '' });
                     patch.poolDraft = { keys: new Set(state.poolDraft.keys), entries };
                   }
                 }
@@ -824,7 +824,7 @@ window.__ModuleLoader__.load({
               });
             } catch (error) {
               if (!isCurrent()) return;
-              const conflict = /conflict|revision|版本|冲突|其他位置更新/i.test(`${error?.code || ''} ${error?.message || ''}`);
+              const conflict = error?.code === 'revision-conflict';
               commit((state) => ({
                 ...state, busy: null,
                 error: { message: error?.message || String(error) },
@@ -834,7 +834,7 @@ window.__ModuleLoader__.load({
                 noticeKind: '',
               }));
             } finally {
-              if (isCurrent()) { operation.current = null; commit((state) => ({ ...state, busy: null })); }
+              if (isCurrent()) { operation.current = null; }
             }
           }, [sessionId, tabSignal, t, commit, request, draftsFrom]);
 
@@ -972,6 +972,16 @@ window.__ModuleLoader__.load({
             editGuide({ guideRules: rules });
             commit((state) => ({ ...state, guidePicker: state.guidePicker === index ? target : state.guidePicker === target ? index : state.guidePicker }));
           }
+          /** 候选子集变化后，同步清理结构化规则中已不再属于子集的模型并重编译说明。 */
+          function reconcileGuideWithModels(draft) {
+            if (!draft || draft.guideMode !== 'rules') return draft;
+            const allowed = new Set(draft.models);
+            const guideRules = (draft.guideRules || []).map((rule) => ({
+              ...rule,
+              models: rule.models.filter((route) => allowed.has(keyOf(route))),
+            }));
+            return { ...draft, guideRules, strategyText: composeGuideText(guideRules, draft.guideFallback || '') };
+          }
           function switchType(type) {
             commit((state) => {
               const draft = state.strategyDraft;
@@ -984,7 +994,7 @@ window.__ModuleLoader__.load({
                 if (fixedRoute) models.add(fixedRoute);
               }
               if (type === 'auto') fixedRoute = '';
-              return { ...state, strategyDraft: { ...draft, type, models, fixedRoute, dirty: true, converting: false } };
+              return { ...state, strategyDraft: reconcileGuideWithModels({ ...draft, type, models, fixedRoute, dirty: true, converting: false }) };
             });
           }
           function validateStrategyDraft() {
@@ -998,6 +1008,10 @@ window.__ModuleLoader__.load({
             else if (snap.management.strategies.some((row) => row.id !== draft.id && row.name === name)) errors.name = t('errNameDup');
             if (draft.type === 'fixed') { if (!draft.fixedRoute || draft.models.size !== 1 || !draft.models.has(draft.fixedRoute)) errors.fixed = t('errFixed'); }
             else if (!draft.models.size) errors.models = t('errModels');
+            if (draft.guideMode === 'rules') {
+              const outside = (draft.guideRules || []).some((rule) => rule.models.some((route) => !draft.models.has(keyOf(route))));
+              if (outside) errors.models = t('guideRuleOutsideSubset');
+            }
             if (draft.strategyText.length > 2000) errors.text = t('errText');
             return errors;
           }
@@ -1032,7 +1046,7 @@ window.__ModuleLoader__.load({
             commit((state) => {
               const draft = state.strategyDraft;
               if (!draft) return state;
-              return { ...state, strategyDraft: { ...draft, models: new Set(), fixedRoute: '', dirty: true } };
+              return { ...state, strategyDraft: reconcileGuideWithModels({ ...draft, models: new Set(), fixedRoute: '', dirty: true }) };
             });
           }
           /**
@@ -1065,30 +1079,22 @@ window.__ModuleLoader__.load({
               const blocked = capacityBlockMessage('strategy.enable');
               if (blocked) { commit((state) => ({ ...state, error: { message: blocked }, notice: null })); return; }
             }
-            // 2. 检查策略候选子集中是否有尚未入池的可用模型；若有则先自动并入池。
+            // 2. 把策略候选子集中尚未入池的可用模型作为 poolAdditions 传给后端，
+            // 由后端在同一个 mutate 事务里先并池再存策略，避免两次独立写导致的半提交。
             const savedPoolKeys = new Set(snap.management.pool.map(keyOf));
-            const newPoolKeys = [...current.strategyDraft.models].filter((key) => !savedPoolKeys.has(key) && snap.candidates.some((row) => keyOf(row) === key && row.authorized && row.available));
-            if (newPoolKeys.length && !operation.current) {
-              try {
-                const mergedPool = [
-                  ...snap.management.pool.map((entry) => ({ provider: entry.provider, model: entry.model, purpose: entry.purpose || '', note: entry.note || '', effort: entry.effort || '' })),
-                  ...newPoolKeys.map((key) => {
-                    const candidate = snap.candidates.find((row) => keyOf(row) === key);
-                    const [provider, model] = JSON.parse(key);
-                    return { provider, model, purpose: (candidate?.description || '').slice(0, 500), note: '', effort: '' };
-                  }),
-                ].slice(0, 200);
-                const poolSnap = await request({ action: 'pool.save', expectedRevision: snap.revision, pool: mergedPool });
-                commit((state) => ({ ...state, snap: poolSnap, poolDraft: draftsFrom(poolSnap).poolDraft }));
-              } catch (error) {
-                commit((state) => ({ ...state, error: { message: error?.message || String(error) }, notice: null }));
-                return;
-              }
-            }
-            // 3. 提交策略保存，成功后返回全局设置页。
-            mutation('strategy.save', { strategy: strategyBody() }, { strategy: true, notice: isActive ? 'savedActive' : 'savedStrategy' });
+            const poolAdditions = [...current.strategyDraft.models]
+              .filter((key) => !savedPoolKeys.has(key) && snap.candidates.some((row) => keyOf(row) === key && row.authorized && row.available))
+              .map((key) => {
+                const candidate = snap.candidates.find((row) => keyOf(row) === key);
+                const [provider, model] = JSON.parse(key);
+                return { provider, model, purpose: (candidate?.description || '').slice(0, 500), note: '', effort: '' };
+              });
+            // 3. 提交策略保存（含原子入池），成功后返回全局设置页。
+            mutation('strategy.save', { strategy: strategyBody(), poolAdditions }, { strategy: true, notice: isActive ? 'savedActive' : 'savedStrategy' });
           }
           function loadServer() {
+            // 载入服务端版本会覆盖本地草稿，必须先确认；文案承诺“草稿已保留”不能变成静默丢稿。
+            if (!discardIfDirty()) return;
             operation.current?.controller.abort();
             operation.current = null;
             serial.current += 1;
@@ -1134,7 +1140,7 @@ window.__ModuleLoader__.load({
                 if (!candidate?.authorized || !candidate?.available) return state;
                 if (keys.size >= 200) return state;
                 keys.add(key);
-                if (!entries.has(key)) entries.set(key, { provider: route.provider, model: route.model, purpose: (candidate.description || '').slice(0, 500), note: '' });
+                if (!entries.has(key)) entries.set(key, { provider: route.provider, model: route.model, purpose: (candidate.description || '').slice(0, 500), note: '', effort: '' });
               }
               return { ...state, poolDraft: { keys, entries } };
             });
@@ -1151,7 +1157,7 @@ window.__ModuleLoader__.load({
                 if (!candidate.authorized || !candidate.available) continue;
                 if (keys.size >= 200) break;
                 const key = keyOf(candidate); keys.add(key);
-                if (!entries.has(key)) entries.set(key, { provider: candidate.provider, model: candidate.model, purpose: (candidate.description || '').slice(0, 500), note: '' });
+                if (!entries.has(key)) entries.set(key, { provider: candidate.provider, model: candidate.model, purpose: (candidate.description || '').slice(0, 500), note: '', effort: '' });
               }
               return { ...state, poolDraft: { keys, entries } };
             });
@@ -1168,7 +1174,7 @@ window.__ModuleLoader__.load({
                 if (keys.size >= 200) break;
                 const key = keyOf(candidate);
                 keys.add(key);
-                if (!entries.has(key)) entries.set(key, { provider: candidate.provider, model: candidate.model, purpose: (candidate.description || '').slice(0, 500), note: '' });
+                if (!entries.has(key)) entries.set(key, { provider: candidate.provider, model: candidate.model, purpose: (candidate.description || '').slice(0, 500), note: '', effort: '' });
               }
               return { ...state, poolDraft: { keys, entries } };
             });
@@ -1200,7 +1206,18 @@ window.__ModuleLoader__.load({
               return;
             }
             const order = [...snap.candidates.map(keyOf), ...[...pool.keys].filter((key) => !snap.candidates.some((row) => keyOf(row) === key))];
-            const entries = order.filter((key) => pool.keys.has(key)).map((key) => pool.entries.get(key) || (() => { const [provider, model] = JSON.parse(key); return { provider, model, purpose: '', note: '' }; })());
+            // 以已保存 entry 为底合并草稿，避免草稿字段不全把已配置 effort/purpose/note 静默清空。
+            const savedEntryByKey = new Map(snap.management.pool.map((entry) => [keyOf(entry), entry]));
+            const entries = order.filter((key) => pool.keys.has(key)).map((key) => {
+              const draftEntry = pool.entries.get(key);
+              const savedEntry = savedEntryByKey.get(key);
+              if (draftEntry && savedEntry) {
+                return { ...savedEntry, ...draftEntry, effort: draftEntry.effort ?? savedEntry.effort ?? '' };
+              }
+              if (draftEntry) return { purpose: '', note: '', effort: '', ...draftEntry };
+              const [provider, model] = JSON.parse(key);
+              return { provider, model, purpose: '', note: '', effort: '' };
+            });
             mutation('pool.save', { pool: entries }, { pool: true, notice: 'poolSaved' });
           }
           function syncPool() {
@@ -1309,7 +1326,7 @@ window.__ModuleLoader__.load({
             if (ui.detail?.kind === 'strategy') focusEl(titleRefs.current.strategyDetail);
             else if (ui.detail?.kind === 'model') focusEl(titleRefs.current.modelDetail);
             else focusEl(titleRefs.current[page]);
-          }, [page, ui.detail, snap?.revision]);
+          }, [page, ui.detail?.kind, ui.detail?.id, ui.detail?.key]);
 
           const button = (label, handler, options = {}) => h('button', { type: 'button', onClick: handler, disabled: options.disabled, className: options.className, title: options.title, 'aria-pressed': options.pressed === undefined ? undefined : String(options.pressed), 'aria-label': options.aria || label }, label);
           const badge = (label, kind = '') => h('span', { className: `lezsp-badge ${kind}`.trim() }, label);
@@ -1528,20 +1545,22 @@ window.__ModuleLoader__.load({
             ];
             const fixedChoices = [...poolChoiceKeys, ...staleKeys];
             const autoChoices = [...poolChoiceKeys, ...staleKeys];
-            const choiceLabel = (key) => {
-              const [provider, model] = JSON.parse(key);
-              const entry = pool.find((row) => keyOf(row) === key);
-              const candidate = snap.candidates.find((row) => keyOf(row) === key);
-              return { provider, model, name: entry?.name || candidate?.name || model, effort: entry?.effort || '' };
-            };
+            // 一次性构造 key→info 索引，避免每个候选行都 JSON.parse + 线性 find 造成 O(n²) 渲染。
+            const choiceInfoMap = new Map();
+            for (const entry of pool) choiceInfoMap.set(keyOf(entry), { provider: entry.provider, model: entry.model, name: entry.name || entry.model, effort: entry.effort || '' });
+            for (const candidate of snap.candidates) {
+              const key = keyOf(candidate);
+              if (!choiceInfoMap.has(key)) choiceInfoMap.set(key, { provider: candidate.provider, model: candidate.model, name: candidate.name || candidate.model, effort: '' });
+            }
+            const choiceLabel = (key) => choiceInfoMap.get(key) || (() => { const [provider, model] = JSON.parse(key); return { provider, model, name: model, effort: '' }; })();
             const choose = (key, checked, type) => {
               if (type === 'fixed') {
-                commit((state) => state.strategyDraft ? { ...state, strategyDraft: { ...state.strategyDraft, models: new Set([key]), fixedRoute: key, dirty: true } } : state);
+                commit((state) => state.strategyDraft ? { ...state, strategyDraft: reconcileGuideWithModels({ ...state.strategyDraft, models: new Set([key]), fixedRoute: key, dirty: true }) } : state);
               } else {
                 commit((state) => {
                   const current = new Set(state.strategyDraft.models);
                   if (checked) current.add(key); else current.delete(key);
-                  return { ...state, strategyDraft: { ...state.strategyDraft, models: current, dirty: true } };
+                  return { ...state, strategyDraft: reconcileGuideWithModels({ ...state.strategyDraft, models: current, dirty: true }) };
                 });
               }
             };
