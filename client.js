@@ -105,6 +105,9 @@ window.__ModuleLoader__.load({
       warningNeedsAdjust: '“{name}” references models outside the session pool; edit the strategy before enabling it. Not enabled.',
       warningNoLegacy: 'Legacy follow strategies cannot be enabled here; save them as fixed or Agent-chosen.',
       recordsTitle: 'Execution insights', recordsSub: 'Real subagent creations recorded by this plugin; no sample tasks and no statistics.',
+      manage: 'Manage', cardsHint: 'Click Edit to open the drawer; the switch enables or closes the strategy.',
+      syncDefault: 'Sync now', defaultStaleHint: 'The default snapshot of “{name}” lags behind the saved strategy. Sync to regenerate the new-session default from the latest content.',
+      allFilter: 'All', searchRecordsPlaceholder: 'Search task / strategy / model…', recordsCount: '{shown}/{total}',
       recordsHint: 'Records keep the strategy name from creation, even if the strategy is later renamed or deleted.',
       noRecords: 'No execution insights yet.', task: 'Task', status: 'Status', statusAdmitted: 'Admitted', statusStarted: 'Started', statusDisposed: 'Released',
       requested: 'Requested model', actual: 'Actual model', evidence: 'Evidence', recordedAt: 'Recorded at', noRequest: 'Not recorded', noActual: 'Not confirmed',
@@ -216,6 +219,9 @@ window.__ModuleLoader__.load({
       warningNeedsAdjust: '「{name}」引用了不在会话池的模型，需先编辑策略调整引用；未启用。',
       warningNoLegacy: '旧版跟随策略不能在此启用；请保存为固定或 Agent 自选。',
       recordsTitle: '执行洞察', recordsSub: '本插件记录的真实子智能体创建；不创建示例任务，不提供统计。',
+      manage: '管理', cardsHint: '点「编辑」打开抽屉；右侧开关控制启用。',
+      syncDefault: '一键同步', defaultStaleHint: '「{name}」的默认快照落后于策略当前版本；同步后按最新内容生成新会话默认。',
+      allFilter: '全部', searchRecordsPlaceholder: '搜索任务 / 策略 / 模型…', recordsCount: '{shown}/{total} 条',
       recordsHint: '记录保留创建时的策略名，之后重命名或删除策略不会改写历史。',
       noRecords: '暂无执行洞察。', task: '任务', status: '状态', statusAdmitted: '已准入', statusStarted: '执行中', statusDisposed: '已释放',
       requested: '请求模型', actual: '实际模型', evidence: '证据', recordedAt: '记录时间', noRequest: '未记录', noActual: '待确认',
@@ -324,6 +330,19 @@ window.__ModuleLoader__.load({
       .lezsp .lezsp-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:var(--dsw-alias-bg-module-platform);font-family:ui-monospace,monospace;font-size:11px;color:var(--dsw-alias-label-secondary)}
       .lezsp .lezsp-chip-x{padding:0 2px;border:0;background:transparent;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:1}
       .lezsp .lezsp-guide-picker{margin:4px 0 2px;padding:9px 10px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-module-platform)}
+      .lezsp .lezsp-statusbar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-start;margin:10px 0;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
+      .lezsp .lezsp-sb-item{display:grid;gap:4px;min-width:0}
+      .lezsp .lezsp-sb-item+.lezsp-sb-item{padding-left:20px;border-left:1px solid var(--dsw-alias-border-l2)}
+      .lezsp .lezsp-sb-label{color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700;letter-spacing:.3px}
+      .lezsp .lezsp-sb-value{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;font-weight:600}
+      .lezsp .lezsp-sb-action{margin-left:auto}
+      .lezsp .lezsp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:12px}
+      .lezsp .lezsp-chip-group{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+      .lezsp .lezsp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
+      .lezsp .lezsp-drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,94vw);z-index:41;overflow:auto;padding:16px 18px;border-left:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-module-platform);box-shadow:-16px 0 40px rgba(0,0,0,.35)}
+      .lezsp .lezsp-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+      .lezsp .lezsp-filter-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+      .lezsp .lezsp-filter-row button[aria-pressed="true"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary);font-weight:700}
       @media(max-width:420px){.lezsp{padding:10px}.lezsp-nav button{font-size:11px}.lezsp dl{grid-template-columns:1fr;gap:1px}.lezsp dd{margin-bottom:6px}.lezsp-pool-row{grid-template-columns:auto minmax(0,1fr)}}
     `;
 
@@ -579,7 +598,7 @@ window.__ModuleLoader__.load({
 
         function PolicySession({ sessionId, t, visible, tabSignal }) {
           const prefix = useId();
-          const [ui, setUi] = useState({ snap: null, page: 'strategies', detail: null, poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, poolQuery: '', choiceQuery: '', guidePicker: -1, guideQuery: '', busy: null, error: null, notice: null, noticeKind: '', conflict: false, mustRefresh: false, lastActiveId: null, lastDefault: null });
+          const [ui, setUi] = useState({ snap: null, page: 'strategies', detail: null, poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, poolQuery: '', choiceQuery: '', guidePicker: -1, guideQuery: '', recordQuery: '', recordProvider: '', busy: null, error: null, notice: null, noticeKind: '', conflict: false, mustRefresh: false, lastActiveId: null, lastDefault: null });
           const uiRef = useRef(ui);
           const operation = useRef(null);
           const serial = useRef(0);
@@ -1148,7 +1167,7 @@ window.__ModuleLoader__.load({
             else focusEl(titleRefs.current[page]);
           }, [page, ui.detail, snap?.revision]);
 
-          const button = (label, handler, options = {}) => h('button', { type: 'button', onClick: handler, disabled: options.disabled, className: options.className, title: options.title, 'aria-label': options.aria || label }, label);
+          const button = (label, handler, options = {}) => h('button', { type: 'button', onClick: handler, disabled: options.disabled, className: options.className, title: options.title, 'aria-pressed': options.pressed === undefined ? undefined : String(options.pressed), 'aria-label': options.aria || label }, label);
           const badge = (label, kind = '') => h('span', { className: `lezsp-badge ${kind}`.trim() }, label);
           const banner = (content, kind = '') => h('div', { className: `lezsp-banner ${kind}`.trim(), role: kind === 'err' ? 'alert' : 'status' }, content);
           const hostCapacityNotice = () => {
@@ -1217,43 +1236,39 @@ window.__ModuleLoader__.load({
               : [t('noModelsSelected')];
             const stateText = adjust ? t('adjustBadge') : pending ? t('pendingBadge') : isActive ? t('activeBadge') : t('stateOff');
             const stateClass = `lezsp-state${adjust || pending ? ' warn' : isActive ? ' on' : ''}`;
+            const capacityReason = capacityBlockMessage('strategy.enable');
+            const enableFlow = () => {
+              if (pending) {
+                warn(fmt(t('warningPendingRecovery'), { name: strategy.name, models: [...new Set(pendingRoutes.map((route) => modelName(route)))].join('、') }));
+                return;
+              }
+              mutation('strategy.enable', { id: strategy.id }, { notice: null });
+            };
+            // 卡片只保留高频操作：编辑（抽屉）与启用开关；设默认/删除收进编辑抽屉。
             return h('article', { key: strategy.id, className: `lezsp-card${isActive ? ' active' : ''}`, 'aria-labelledby': idFor(`strategy-${strategy.id}`), tabIndex: -1 },
               h('p', { className: 'lezsp-card-head' },
                 h('strong', { className: 'lezsp-card-name', id: idFor(`strategy-${strategy.id}`) }, strategy.name),
-                ' · ', h('span', { className: 'lezsp-muted' }, typeLabel(strategy.type)), ' · ',
-                h('span', { className: stateClass }, stateText),
-                isDefault ? h(React.Fragment, null, ' · ', h('span', { className: defaultStale ? 'lezsp-state warn' : 'lezsp-muted' }, defaultStale ? t('defaultStaleBadge') : t('defaultBadge'))) : null),
-              h('p', { className: 'lezsp-card-models' }, modelLines.map((line) => h('span', { key: line, className: 'lezsp-card-model-line' }, line))),
+                isActive ? badge(t('activeBadge'), 'on') : null,
+                isDefault ? badge(defaultStale ? t('defaultStaleBadge') : t('defaultBadge'), defaultStale ? 'warn' : '') : null,
+                adjust ? badge(t('adjustBadge'), 'warn') : pending ? badge(t('pendingBadge'), 'warn') : null),
+              h('div', { className: 'lezsp-badges', style: { marginTop: '6px' } },
+                badge(typeLabel(strategy.type)),
+                h('span', { className: stateClass }, stateText)),
+              h('div', { className: 'lezsp-chip-group' }, [...byProvider].map(([provider, names]) => names.map((label) => h('span', { key: `${provider}:${label}`, className: 'lezsp-chip' }, `${provider} · ${label}`)))),
+              !byProvider.size ? h('p', { className: 'lezsp-muted' }, t('noModelsSelected')) : null,
               adjust ? h('p', { className: 'lezsp-error' }, t('needsAdjustHint'))
                 : pending ? h('p', { className: 'lezsp-warn' }, fmt(t('pendingRecoveryHint'), { models: [...new Set(pendingRoutes.map((route) => modelName(route)))].join('、') })) : null,
               strategy.type === 'inherit' ? h('p', { className: 'lezsp-muted' }, t('legacyHint')) : null,
-              h('div', { className: 'lezsp-actions' },
-                button(t('edit'), () => openStrategy(strategy.id), { disabled: busy, aria: fmt(t('editLabel'), { name: strategy.name }) }),
-                isActive
-                  ? button(t('disable'), () => mutation('strategy.close', {}, { notice: null }), { disabled: !editable, aria: fmt(t('disableLabel'), { name: strategy.name }) })
-                  : strategy.type === 'inherit' ? null : (() => {
-                    const capacityReason = capacityBlockMessage('strategy.enable');
-                    return button(t('enable'), () => {
-                      // F-50: enabling is refused with a recovery hint instead of
-                      // being disabled; the Host still enforces the same gate.
-                      if (pending) {
-                        warn(fmt(t('warningPendingRecovery'), { name: strategy.name, models: [...new Set(pendingRoutes.map((route) => modelName(route)))].join('、') }));
-                        return;
-                      }
-                      mutation('strategy.enable', { id: strategy.id }, { notice: null });
-                    }, { disabled: !editable || adjust || Boolean(capacityReason), title: capacityReason || undefined, aria: fmt(t('enableLabel'), { name: strategy.name }) });
-                  })(),
-                button(t('setDefault'), () => setDefault(strategy.id), { disabled: !editable || strategy.type === 'inherit', aria: fmt(t('setDefaultLabel'), { name: strategy.name }) }),
-                button(t('delete'), () => {
-                  if (!window.confirm(fmt(t('deleteConfirm'), { name: strategy.name }))) return;
-                  mutation('strategy.delete', { id: strategy.id }, { notice: 'deletedNotice', name: strategy.name });
-                }, { disabled: !editable || isActive || isDefault, aria: fmt(t('deleteLabel'), { name: strategy.name }) })),
+              h('div', { className: 'lezsp-actions lezsp-between' },
+                button(t('edit'), () => openStrategy(strategy.id), { className: 'lezsp-small', disabled: busy, aria: fmt(t('editLabel'), { name: strategy.name }) }),
+                strategy.type === 'inherit' ? null : switchControl(`enable-${strategy.id}`, isActive, !editable || (!isActive && (adjust || Boolean(capacityReason))),
+                  isActive ? fmt(t('disableLabel'), { name: strategy.name }) : fmt(t('enableLabel'), { name: strategy.name }),
+                  (checked) => { if (checked) enableFlow(); else mutation('strategy.close', {}, { notice: null }); })),
               isActive ? h('p', { className: 'lezsp-muted' }, t('deleteActiveHint'))
                 : isDefault ? h('p', { className: 'lezsp-muted' }, t('deleteDefaultHint')) : null);
           }
 
           function strategiesPage() {
-            if (ui.detail?.kind === 'strategy' && draft) return strategyDetail();
             const defaultValue = snap.defaultSetting.snapshot;
             const valueLimits = defaultValue?.limits || null;
             const defaultText = defaultValue
@@ -1277,18 +1292,39 @@ window.__ModuleLoader__.load({
                 ? fmt(t('defaultSkipped'), { count: skipped.length, models: routeList(skippedNames, t('listSeparator')) })
                 : fmt(t('defaultSkippedCovered'), { count: skipped.length }))
               : '';
+            const defaultSource = defaultValue?.sourceId ? strategyById(defaultValue.sourceId) : null;
+            const defaultStale = Boolean(defaultValue && defaultSource && (defaultValue.version || 0) < (defaultSource.version || 1));
+            // 全局状态栏：策略开关 / 全局默认 / 模型池规模 / 限制，一栏看全。
             return h(React.Fragment, null,
-              h('section', { className: 'lezsp-status', 'aria-labelledby': idFor('sessionTitle') },
-                h('div', { className: 'lezsp-between lezsp-row' },
-                  h('h2', { id: idFor('sessionTitle'), tabIndex: -1, ref: titleRef('strategies') }, t('sessionTitle')),
-                  switchControl('policyToggle', Boolean(active), !editable, active ? t('policyLabelOn') : t('policyLabelOff'), (checked) => { if (checked) restoreActive(); else closeActive(); })),
-                h('p', null, active
-                  ? fmt(t('activeLine'), { name: active.snapshot.name, type: typeLabel(active.snapshot.type), target: active.snapshot.type === 'fixed' ? activeTarget : fmt(t('targetAuto'), { count: activeTarget }) })
-                  : t('closedSummary')),
-                h('div', { className: 'lezsp-between lezsp-row lezsp-status-divider' },
-                  h('h2', { id: idFor('defaultTitle'), tabIndex: -1 }, t('defaultTitle')),
-                  switchControl('defaultToggle', Boolean(defaultValue), !editable, defaultValue ? t('defaultLabelOn') : t('defaultLabelOff'), toggleDefault)),
-                h('p', null, defaultText),
+              h('section', { className: 'lezsp-statusbar', 'aria-labelledby': idFor('sessionTitle') },
+                h('div', { className: 'lezsp-sb-item' },
+                  h('span', { className: 'lezsp-sb-label', id: idFor('sessionTitle'), tabIndex: -1, ref: titleRef('strategies') }, t('sessionTitle')),
+                  h('div', { className: 'lezsp-sb-value' },
+                    switchControl('policyToggle', Boolean(active), !editable, active ? t('policyLabelOn') : t('policyLabelOff'), (checked) => { if (checked) restoreActive(); else closeActive(); }),
+                    h('span', null, active
+                      ? fmt(t('activeLine'), { name: active.snapshot.name, type: typeLabel(active.snapshot.type), target: active.snapshot.type === 'fixed' ? activeTarget : fmt(t('targetAuto'), { count: activeTarget }) })
+                      : t('closedSummary')))),
+                h('div', { className: 'lezsp-sb-item' },
+                  h('span', { className: 'lezsp-sb-label', id: idFor('defaultTitle') }, t('defaultTitle')),
+                  h('div', { className: 'lezsp-sb-value' },
+                    switchControl('defaultToggle', Boolean(defaultValue), !editable, defaultValue ? t('defaultLabelOn') : t('defaultLabelOff'), toggleDefault),
+                    h('span', null, defaultText))),
+                h('div', { className: 'lezsp-sb-item' },
+                  h('span', { className: 'lezsp-sb-label' }, t('modelsTitle')),
+                  h('div', { className: 'lezsp-sb-value' },
+                    h('span', null, fmt(t('modelCount'), { count: snap.management.pool.length })),
+                    button(t('manage'), () => goPage('models'), { className: 'lezsp-small lezsp-link' }))),
+                h('div', { className: 'lezsp-sb-item' },
+                  h('span', { className: 'lezsp-sb-label' }, t('limitsTitle')),
+                  h('div', { className: 'lezsp-sb-value' },
+                    h('span', null, savedLimits ? fmt(t('savedLimits'), { depth: savedLimits.maxDepth, active: savedLimits.maxActive }) : t('noSavedLimits')))),
+                h('div', { className: 'lezsp-sb-item lezsp-sb-action' },
+                  button(t('newStrategy'), () => openStrategy(null), { className: 'lezsp-small lezsp-primary', disabled: !editable }))),
+              defaultStale ? h('div', { className: 'lezsp-banner warn', role: 'status' },
+                h('p', null, fmt(t('defaultStaleHint'), { name: defaultValue.name })),
+                h('div', { className: 'lezsp-actions' },
+                  button(t('syncDefault'), () => setDefault(defaultValue.sourceId), { className: 'lezsp-small lezsp-primary', disabled: !editable }))) : null,
+              h(React.Fragment, null,
                 defaultConflict ? banner(fmt(t('defaultConflict'), { depth: valueLimits.maxDepth, active: valueLimits.maxActive, ceilingDepth: snap.host.maxDepth, ceilingActive: capacity.known ? capacity.raw : '—' }), 'warn') : null,
                 modelConflict.unauthorized.length
                   ? banner(fmt(t('defaultUnauthorized'), { models: routeList(modelConflict.unauthorized, t('listSeparator')) }), 'warn')
@@ -1300,9 +1336,9 @@ window.__ModuleLoader__.load({
               savedLimitsOver && capacity.known ? banner(fmt(t('hostLimitBlocked'), { depth: savedLimits.maxDepth, active: savedLimits.maxActive, ceilingDepth: snap.host.maxDepth, ceilingActive: capacity.raw }) + (active ? t('hostConflictActive') : ''), 'warn') : null,
               h('div', { className: 'lezsp-section-head' },
                 h('h2', { id: idFor('strategiesTitle'), tabIndex: -1 }, t('strategies'), ' ', h('span', { className: 'lezsp-count' }, fmt(t('countSuffix'), { count: snap.management.strategies.length }))),
-                button(t('newStrategy'), () => openStrategy(null), { className: 'lezsp-small lezsp-primary', disabled: !editable })),
+                h('span', { className: 'lezsp-muted' }, t('cardsHint'))),
               snap.management.strategies.length
-                ? h('div', { className: 'lezsp-stack' }, snap.management.strategies.map(strategyCard))
+                ? h('div', { className: 'lezsp-cards' }, snap.management.strategies.map(strategyCard))
                 : h('div', { className: 'lezsp-empty' }, t('emptyStrategies')));
           }
 
@@ -1448,11 +1484,12 @@ window.__ModuleLoader__.load({
                 draft.guideMode === 'rules' ? rulesEditor : freeEditor,
                 errors.text ? h('small', { className: 'lezsp-error' }, errors.text) : null);
             };
+            const savedIsDefault = Boolean(saved && snap.defaultSetting.snapshot?.sourceId === saved.id);
             return h('section', { 'aria-label': t('editStrategyTitle') },
-              h('div', { className: 'lezsp-between lezsp-row' },
-                button(t('back'), () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-link' }),
-                badge(saved ? (isActive ? t('activeBadge') : t('savedBadge')) : t('unsavedBadge'), isActive ? 'on' : '')),
-              h('h2', { className: 'lezsp-detail-title', tabIndex: -1, id: idFor('strategyDetailTitle'), ref: titleRef('strategyDetail') }, saved ? t('editStrategyTitle') : t('newStrategyTitle')),
+              h('div', { className: 'lezsp-drawer-head' },
+                h('h2', { className: 'lezsp-detail-title', tabIndex: -1, id: idFor('strategyDetailTitle'), ref: titleRef('strategyDetail') }, saved ? t('editStrategyTitle') : t('newStrategyTitle')),
+                badge(saved ? (isActive ? t('activeBadge') : t('savedBadge')) : t('unsavedBadge'), isActive ? 'on' : ''),
+                button('✕', () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-small', aria: t('cancelEdit') })),
               h('p', { className: 'lezsp-muted' }, isActive ? t('detailSubActive') : saved ? t('detailSubSaved') : t('detailSubNew')),
               !capacity.known ? hostCapacityNotice() : saveBlocked ? h('p', { className: 'lezsp-note warn', role: 'status' }, saveBlocked) : null,
               draft.converting ? h('p', { className: 'lezsp-note warn' }, t('convertedHint')) : null,
@@ -1475,6 +1512,12 @@ window.__ModuleLoader__.load({
                 draft.type === 'auto' ? guideEditor() : null,
                 ui.error?.fields ? h('div', { className: 'lezsp-banner err', role: 'alert' }, t('formError')) : null,
                 h('div', { className: 'lezsp-form-actions' },
+                  saved ? button(t('setDefault'), () => setDefault(saved.id), { className: 'lezsp-small', disabled: !editable || savedIsDefault || draft.type === 'inherit', aria: fmt(t('setDefaultLabel'), { name: saved.name }) }) : null,
+                  saved ? button(t('delete'), () => {
+                    if (!window.confirm(fmt(t('deleteConfirm'), { name: saved.name }))) return;
+                    mutation('strategy.delete', { id: saved.id }, { notice: 'deletedNotice', name: saved.name });
+                    closeDetail();
+                  }, { className: 'lezsp-small', disabled: !editable || isActive || savedIsDefault, aria: fmt(t('deleteLabel'), { name: saved.name }) }) : null,
                   h('button', { type: 'submit', className: 'lezsp-primary', disabled: !editable }, t('saveStrategy')),
                   button(saved ? t('discard') : t('cancelEdit'), () => {
                     if (!saved) { if (discardIfDirty()) closeDetail(); return; }
@@ -1636,13 +1679,27 @@ window.__ModuleLoader__.load({
           }
 
           function recordsPage() {
+            // 观测与配置分离：provider 筛选 + 任务/策略/模型关键词搜索。
+            const providers = [...new Set(snap.runs.flatMap((record) => [record.requestedProvider, record.actualProvider]).filter(Boolean))];
+            const query = ui.recordQuery.trim().toLowerCase();
+            const visibleRuns = snap.runs.filter((record) => {
+              if (ui.recordProvider && record.requestedProvider !== ui.recordProvider && record.actualProvider !== ui.recordProvider) return false;
+              if (!query) return true;
+              return [record.strategyName, record.label, record.requestedModel, record.actualModel].some((value) => String(value || '').toLowerCase().includes(query));
+            });
             return h(React.Fragment, null,
               h('div', { className: 'lezsp-between lezsp-row' },
                 h('h2', { id: idFor('recordsTitle'), tabIndex: -1, ref: titleRef('records') }, t('recordsTitle')),
-                badge(String(snap.runs.length))),
+                badge(fmt(t('recordsCount'), { shown: visibleRuns.length, total: snap.runs.length }))),
               h('p', { className: 'lezsp-sub' }, t('recordsSub')),
+              h('div', { className: 'lezsp-filter-row', role: 'group', 'aria-label': t('recordsTitle') },
+                button(t('allFilter'), () => commit((state) => ({ ...state, recordProvider: '' })), { className: 'lezsp-small', pressed: !ui.recordProvider }),
+                providers.map((provider) => button(provider, () => commit((state) => ({ ...state, recordProvider: provider })), { className: 'lezsp-small', pressed: ui.recordProvider === provider }))),
+              h('label', { className: 'lezsp-field', htmlFor: idFor('recordSearch') },
+                h('span', null, t('searchModels')),
+                h('input', { id: idFor('recordSearch'), type: 'search', value: ui.recordQuery, placeholder: t('searchRecordsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, recordQuery: event.target.value })) })),
               h('p', { className: 'lezsp-muted' }, t('recordsHint')),
-              snap.runs.length ? h('div', { className: 'lezsp-stack' }, snap.runs.map((record) => {
+              visibleRuns.length ? h('div', { className: 'lezsp-stack' }, visibleRuns.map((record) => {
                 const name = record.strategyName || (record.strategyId === 'legacy' ? t('legacyStrategyName') : '') || t('legacyStrategyName');
                 const status = record.status === 'started' ? t('statusStarted') : record.status === 'disposed' ? t('statusDisposed') : t('statusAdmitted');
                 const actual = record.evidence === 'assistant/message' && record.actualModel ? routeLabel({ provider: record.actualProvider, model: record.actualModel }) : t('noActual');
@@ -1701,7 +1758,10 @@ window.__ModuleLoader__.load({
               h('p', null, t('noSnapshot')),
               button(t('retry'), read, { disabled: busy })) : h(React.Fragment, null,
               !snap.canEdit ? banner(t('readOnly')) : null,
-              page === 'strategies' ? strategiesPage() : page === 'models' ? modelsPage() : recordsPage()));
+              page === 'strategies' ? strategiesPage() : page === 'models' ? modelsPage() : recordsPage(),
+              ui.detail?.kind === 'strategy' && draft ? h(React.Fragment, null,
+                h('div', { className: 'lezsp-overlay', onClick: () => { if (discardIfDirty()) closeDetail(); } }),
+                h('aside', { className: 'lezsp-drawer', 'aria-label': t('editStrategyTitle') }, strategyDetail())) : null));
         }
 
         function PolicyTab(props) {
