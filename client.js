@@ -901,7 +901,8 @@ window.__ModuleLoader__.load({
             commit((state) => ({ ...state, detail: null, strategyDraft: null, modelDraft: null, guidePicker: -1, guideQuery: '', error: null, notice: null, noticeKind: '' }));
           }
           function discardIfDirty() {
-            if (uiRef.current.strategyDraft?.dirty || uiRef.current.modelDraft?.dirty) return window.confirm(t('discard'));
+            // 策略、能力卡、模型池、限制任一草稿有修改都必须确认，不能静默丢弃。
+            if (uiRef.current.strategyDraft?.dirty || uiRef.current.modelDraft?.dirty || dirtyOf(uiRef.current)) return window.confirm(t('discard'));
             return true;
           }
           function goPage(page) {
@@ -1087,7 +1088,7 @@ window.__ModuleLoader__.load({
               .map((key) => {
                 const candidate = snap.candidates.find((row) => keyOf(row) === key);
                 const [provider, model] = JSON.parse(key);
-                return { provider, model, purpose: (candidate?.description || '').slice(0, 500), note: '', effort: '' };
+                return { provider, model, purpose: '', note: '', effort: '' };
               });
             // 3. 提交策略保存（含原子入池），成功后返回全局设置页。
             mutation('strategy.save', { strategy: strategyBody(), poolAdditions }, { strategy: true, notice: isActive ? 'savedActive' : 'savedStrategy' });
@@ -1205,7 +1206,7 @@ window.__ModuleLoader__.load({
               commit((state) => ({ ...state, error: { message: fmt(t('poolBlockedActive'), { name: active?.snapshot?.name || activeStrategy?.name || '', models: names }) }, notice: null }));
               return;
             }
-            const order = [...snap.candidates.map(keyOf), ...[...pool.keys].filter((key) => !snap.candidates.some((row) => keyOf(row) === key))];
+            const order = [...new Set([...snap.candidates.map(keyOf), ...pool.keys])];
             // 以已保存 entry 为底合并草稿，避免草稿字段不全把已配置 effort/purpose/note 静默清空。
             const savedEntryByKey = new Map(snap.management.pool.map((entry) => [keyOf(entry), entry]));
             const entries = order.filter((key) => pool.keys.has(key)).map((key) => {

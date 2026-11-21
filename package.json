@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-subagent-policy-global",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "private": false,
   "type": "module",
   "description": "Global subagent policy and searchable provider-grouped model pool for DeepSeek Harness; forked from @lienze/dsh-subagent-model-policy 0.3.3.",

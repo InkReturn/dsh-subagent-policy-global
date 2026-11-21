@@ -327,6 +327,36 @@ test('strategy.save 的 poolAdditions 在池满 200 时明确报错，不静默�
   assert.match(result.text, /最多 200 个模型/);
 });
 
+test('savePool 的候选与池有重叠时不会生成重复模型', async () => {
+  const host = createHost({ global: { revision: 1, default: autoDefault() } });
+  const agent = host.addSession('root');
+  await applyWithPackageMeta(host.ctx, {});
+  // 模拟候选与池重叠时保存，order 去重后不应报「存在重复模型」。
+  const result = await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({ action: 'pool.save', expectedRevision: 1, pool: [{ provider: GLM.provider, model: GLM.model, purpose: '', note: '', effort: '' }] }),
+    signal: new AbortController().signal,
+  });
+  assert.equal(result.kind, 'success', result.text);
+});
+
+test('strategy.save 的 poolAdditions 不自动污染 purpose 字段', async () => {
+  const host = createHost({ global: { revision: 1, default: autoDefault() } });
+  const agent = host.addSession('root');
+  await applyWithPackageMeta(host.ctx, {});
+  const result = await host.commands.get('subagent-policy').handler({
+    agent,
+    rawInput: JSON.stringify({
+      action: 'strategy.save', expectedRevision: 1,
+      strategy: { name: '自动入池策略', type: 'auto', models: [GLM, CLAUDE], fixedProvider: '', fixedModel: '', strategyText: '' },
+      poolAdditions: [{ provider: CLAUDE.provider, model: CLAUDE.model, purpose: '', note: '', effort: '' }],
+    }),
+    signal: new AbortController().signal,
+  });
+  assert.equal(result.kind, 'success', result.text);
+  const added = host.getGlobal().library.pool.find((row) => row.model === CLAUDE.model);
+  assert.equal(added.purpose, '', 'purpose 不应被模型描述自动填充');
+});
 test('savePool 删除默认快照引用的模型会被拒绝', async () => {
   const host = createHost({ global: { revision: 1, default: autoDefault(), library: { version: 1, strategies: [{ id: 'global-auto', name: '全局默认', type: 'auto', models: [GLM], fixedProvider: '', fixedModel: '', strategyText: '', version: 1 }], pool: [{ ...GLM, name: 'GLM-5.3', purpose: '', note: '' }], limits: null, active: null } } });
   const agent = host.addSession('root');
