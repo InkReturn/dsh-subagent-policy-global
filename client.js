@@ -109,7 +109,12 @@ window.__ModuleLoader__.load({
       manage: 'Manage', cardsHint: 'Click Edit to open the drawer; the switch enables or closes the strategy.',
       syncDefault: 'Sync now', defaultStaleHint: 'The default snapshot of “{name}” lags behind the saved strategy. Sync to regenerate the new-session default from the latest content.',
       allFilter: 'All', searchRecordsPlaceholder: 'Search task / strategy / model…', recordsCount: '{shown}/{total}',
-      choiceExpand: 'Expand list', choiceCollapse: 'Collapse list', selectVisible: 'Select filtered',
+      choiceExpand: 'Expand candidate list', choiceCollapse: 'Collapse candidate list', selectVisible: 'Select filtered',
+      clearSelected: 'Clear', notInPoolBadge: 'Not in pool', notInPoolAutoHint: 'Models marked “Not in pool” are automatically added to the model pool when you save the strategy.',
+      effortRowNote: 'Effort: {effort}', effortDefaultNote: 'Default (may be lowest)', configureBtn: 'Configure', collapseBtn: 'Collapse',
+      WhenTaskInvolves: 'When task involves', defaultOnlyNewHint: 'Applies to new sessions only; active sessions are unaffected.',
+      poolGroupStat: '{inPool}/{total} in pool', poolTotalStat: '{total} models · {inPool} in pool', groupSelectedStat: 'Selected {count}',
+      sectionSessionPick: 'Choose strategy for this session',
       recordsHint: 'Records keep the strategy name from creation, even if the strategy is later renamed or deleted.',
       noRecords: 'No execution insights yet.', task: 'Task', status: 'Status', statusAdmitted: 'Admitted', statusStarted: 'Started', statusDisposed: 'Released',
       requested: 'Requested model', actual: 'Actual model', evidence: 'Evidence', recordedAt: 'Recorded at', noRequest: 'Not recorded', noActual: 'Not confirmed',
@@ -227,6 +232,11 @@ window.__ModuleLoader__.load({
       syncDefault: '一键同步', defaultStaleHint: '「{name}」的默认快照落后于策略当前版本；同步后按最新内容生成新会话默认。',
       allFilter: '全部', searchRecordsPlaceholder: '搜索任务 / 策略 / 模型…', recordsCount: '{shown}/{total} 条',
       choiceExpand: '展开候选列表', choiceCollapse: '收起候选列表',
+      clearSelected: '清空', notInPoolBadge: '未入池', notInPoolAutoHint: '带「未入池」的模型勾选后自动加入模型池，保存策略时原子提交。',
+      effortRowNote: '思考：{effort}', effortDefaultNote: '默认（可能最低）', configureBtn: '配置', collapseBtn: '收起',
+      WhenTaskInvolves: '当任务涉及', defaultOnlyNewHint: '只影响新会话；已启用会话不受影响',
+      poolGroupStat: '{inPool}/{total} 入池', poolTotalStat: '共 {total} 个模型 · {inPool} 个入池', groupSelectedStat: '已选 {count}',
+      sectionSessionPick: '选择本会话使用的策略',
       recordsHint: '记录保留创建时的策略名，之后重命名或删除策略不会改写历史。',
       noRecords: '暂无执行洞察。', task: '任务', status: '状态', statusAdmitted: '已准入', statusStarted: '执行中', statusDisposed: '已释放',
       requested: '请求模型', actual: '实际模型', evidence: '证据', recordedAt: '记录时间', noRequest: '未记录', noActual: '待确认',
@@ -242,116 +252,153 @@ window.__ModuleLoader__.load({
       deleteConfirm: '删除「{name}」？不影响当前会话。',
     };
     const CSS = `
-      .lezsp{box-sizing:border-box;width:100%;height:100%;min-width:0;overflow:auto;overflow-wrap:anywhere;padding:14px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-module-platform);font:inherit;font-size:13px;line-height:1.55}
+      .lezsp{
+        --bg0:#0d1117;--bg1:#151b23;--bg2:#1c2430;--bg3:#232d3c;
+        --line:#2c3646;--line-soft:#222b39;
+        --tx:#e6edf3;--tx2:#9aa7b8;--tx3:#67758a;
+        --blue:#4c8dff;--blue-dim:#2b4a7a;
+        --ok:#3fb97f;--warn:#e8a33d;--err:#e06c5f;
+        --r:10px;--mono:'JetBrains Mono','Cascadia Code',ui-monospace,Consolas,monospace;
+        box-sizing:border-box;width:100%;height:100%;min-width:0;overflow:auto;overflow-wrap:anywhere;
+        padding:20px 24px 64px;color:var(--tx);background:var(--bg0);
+        font:14px/1.6 -apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+      }
       .lezsp *,.lezsp-header *{box-sizing:border-box}.lezsp [hidden]{display:none!important}
-      .lezsp h1{font-size:17px;line-height:1.3;margin:0}.lezsp h2{font-size:16px;line-height:1.4;margin:0}.lezsp h3{font-size:13px;margin:0;font-weight:600}
-      .lezsp p{margin:5px 0}.lezsp section{margin:12px 0}.lezsp small,.lezsp .lezsp-muted{color:var(--dsw-alias-label-tertiary);font-size:12px}
-      .lezsp-sub{margin-top:2px;color:var(--dsw-alias-label-tertiary);font-size:12px}
-      .lezsp-nav{display:flex;gap:3px;margin-top:12px;padding:3px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
-      .lezsp-nav button{flex:1 1 0;min-width:0;padding:6px 3px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
-      .lezsp-nav button[aria-current="page"]{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary)}
-      .lezsp-status{margin:10px 0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);display:grid;gap:6px}
-      .lezsp-pill{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
-      .lezsp-pill.on{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-module-platform)}
-      .lezsp-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}.lezsp-between{justify-content:space-between}.lezsp-stack{display:grid;gap:10px;min-width:0}
-      .lezsp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:10px;min-width:0}
-      .lezsp-card{padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;min-width:0;background:var(--dsw-alias-bg-layer-1)}
-      .lezsp-card.active{border-color:var(--dsw-alias-brand-primary)}
-      .lezsp-badges{display:flex;flex-wrap:wrap;gap:4px}.lezsp-badge{padding:1px 6px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;font-size:11px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-module-platform)}
-      .lezsp-badge.on{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-module-platform);font-weight:700}
-      .lezsp-badge.warn{border-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary));color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary));font-weight:700}
-      .lezsp-meta{margin-top:3px;color:var(--dsw-alias-label-secondary);font-size:12px}.lezsp-meta strong{color:var(--dsw-alias-label-primary)}
-      .lezsp-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+      .lezsp h1{font-size:20px;font-weight:700;line-height:1.3;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .lezsp h2{font-size:15px;font-weight:700;line-height:1.4;margin:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+      .lezsp h3{font-size:14px;margin:0;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .lezsp p{margin:4px 0}.lezsp section{margin:14px 0}
+      .lezsp small,.lezsp .lezsp-muted{color:var(--tx3);font-size:12px;font-weight:400}
+      .lezsp-sub{margin-top:3px;color:var(--tx2);font-size:12px}
+      .lezsp-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line-soft)}
+      .lezsp-nav{display:inline-flex;flex-wrap:wrap;gap:3px;padding:3px;border:1px solid var(--line);border-radius:9px;background:var(--bg1)}
+      .lezsp-nav button{flex:0 0 auto;padding:7px 18px;border:0;border-radius:6px;background:transparent;color:var(--tx2);font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+      .lezsp-nav button:hover:not(:disabled){color:var(--tx);background:var(--bg2)}
+      .lezsp-nav button[aria-current="page"]{background:var(--blue);color:#fff;font-weight:600}
+      .lezsp-status{margin:12px 0;padding:14px 18px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+      .lezsp-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+      .lezsp-between{justify-content:space-between}
+      .lezsp-stack{display:grid;gap:8px;min-width:0}
+      .lezsp-grid,.lezsp-form2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:12px;min-width:0}
+      .lezsp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px;min-width:0}
+      .lezsp-card{padding:15px 18px;border:1px solid var(--line);border-radius:var(--r);min-width:0;background:var(--bg1);display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+      .lezsp-card:hover{border-color:#3b4960}
+      .lezsp-card.active{border-color:var(--blue-dim);box-shadow:0 0 0 1px var(--blue-dim)}
+      .lezsp-panel{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);margin:0 0 12px;min-width:0}
+      .lezsp-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+      .lezsp-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:500;color:var(--tx2);background:var(--bg2);white-space:nowrap}
+      .lezsp-badge.on,.lezsp-badge.blue{color:var(--blue);border-color:rgba(76,141,255,.45);background:rgba(76,141,255,.1);font-weight:600}
+      .lezsp-badge.ok{color:var(--ok);border-color:rgba(63,185,127,.45);background:rgba(63,185,127,.1);font-weight:600}
+      .lezsp-badge.warn{color:var(--warn);border-color:rgba(232,163,61,.45);background:rgba(232,163,61,.1);font-weight:600}
+      .lezsp-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:6px}
       .lezsp .lezsp-switch{position:relative;display:inline-flex;align-items:center;flex:none;cursor:pointer}
-      .lezsp .lezsp-seg{display:flex;gap:4px;margin:0 0 10px;padding:3px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-1)}
-      .lezsp .lezsp-seg button{flex:1 1 0;min-width:0;border:1px solid transparent;background:transparent;color:var(--dsw-alias-label-tertiary);font-weight:700}
-      .lezsp .lezsp-seg button[aria-pressed="true"]{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary)}
+      .lezsp .lezsp-seg{display:inline-flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;border:0;background:transparent}
+      .lezsp .lezsp-seg button{flex:0 0 auto;padding:6px 14px;border:1px solid var(--line);border-radius:7px;background:var(--bg2);color:var(--tx2);font-size:12.5px;font-weight:500}
+      .lezsp .lezsp-seg button[aria-pressed="true"]{border-color:var(--blue);background:rgba(76,141,255,.1);color:var(--blue);font-weight:600}
       .lezsp input.lezsp-switch-input[type=checkbox]{position:absolute;width:1px;height:1px;opacity:0;margin:0}
-      .lezsp .lezsp-switch-track{position:relative;display:inline-block;width:34px;height:18px;border-radius:999px;background:var(--dsw-alias-border-l2);transition:background .15s}
-      .lezsp .lezsp-switch-track::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--dsw-alias-bg-module-platform);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
-      .lezsp .lezsp-switch input:checked+.lezsp-switch-track{background:var(--dsw-alias-brand-primary)}
-      .lezsp .lezsp-switch input:checked+.lezsp-switch-track::after{transform:translateX(16px)}
-      .lezsp .lezsp-switch input:focus-visible+.lezsp-switch-track{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
-      .lezsp .lezsp-card-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin:0}
-      .lezsp .lezsp-card-name{font-size:14px;font-weight:700;line-height:1.4}
-      .lezsp .lezsp-card-models{margin:4px 0 0;color:var(--dsw-alias-label-tertiary);font-size:11px}
-      .lezsp .lezsp-card-model-line{display:block}
-      .lezsp .lezsp-state{color:var(--dsw-alias-label-tertiary);font-size:12px}
-      .lezsp .lezsp-state.on{color:var(--dsw-alias-brand-primary);font-weight:700}
-      .lezsp .lezsp-state.warn{color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary));font-weight:700}
-      .lezsp .lezsp-detail-meta{margin-left:6px;color:var(--dsw-alias-label-tertiary);font-size:12px;font-weight:400}
-      .lezsp button,.lezsp-header button{font:inherit;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:6px 10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);cursor:pointer;white-space:normal;overflow-wrap:anywhere}
-      .lezsp button:hover:not(:disabled),.lezsp-header button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-3)}
-      .lezsp button:disabled{opacity:.55;cursor:not-allowed}.lezsp .lezsp-primary{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-module-platform);font-weight:700}
-      .lezsp .lezsp-small{padding:4px 8px;font-size:11px}
-      .lezsp .lezsp-link{padding:2px 0;border:0;background:transparent;color:var(--dsw-alias-brand-primary);font-weight:600;text-decoration:underline;text-underline-offset:2px}
-      .lezsp :is(button,input,textarea,select,summary):focus-visible,.lezsp-header button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
-      .lezsp h1:focus-visible,.lezsp h2:focus-visible,.lezsp h3:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
-      .lezsp fieldset{padding:9px 10px;margin:0 0 11px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;min-width:0}.lezsp legend{padding:0 4px;font-size:12px;font-weight:700}
-      .lezsp-field{display:grid;gap:4px;margin:0 0 11px;min-width:0}.lezsp-field>span:first-child{font-size:12px;font-weight:700}
-      .lezsp input:not([type=checkbox]):not([type=radio]),.lezsp select,.lezsp textarea{width:100%;min-width:0;max-width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:7px 9px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;line-height:1.5}
-      .lezsp textarea{resize:vertical;min-height:62px;overflow-wrap:anywhere}
-      .lezsp input[type=checkbox],.lezsp input[type=radio]{width:16px;height:16px;flex:none;margin:2px 0;accent-color:var(--dsw-alias-brand-primary)}
-      .lezsp :is(input,textarea,select,fieldset)[aria-invalid="true"]{border-color:var(--dsw-alias-state-error-primary)}
-      .lezsp .lezsp-error{color:var(--dsw-alias-state-error-primary);font-size:11px;font-weight:700}
-      .lezsp .lezsp-warn{color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary));font-size:11px;font-weight:700}
-      .lezsp .lezsp-banner{margin:9px 0;padding:8px 10px;border:1px solid var(--dsw-alias-border-l2);border-left:4px solid var(--dsw-alias-brand-primary);border-radius:8px;background:var(--dsw-alias-bg-layer-1);min-width:0}
-      .lezsp .lezsp-banner.warn{border-left-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
-      .lezsp .lezsp-banner.err{border-left-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
-      .lezsp .lezsp-fold{padding:9px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);min-width:0}
-      .lezsp .lezsp-fold>summary{cursor:pointer;font-size:12px;font-weight:700}.lezsp .lezsp-fold>div,.lezsp .lezsp-fold>dl{margin-top:8px}
-      .lezsp dl{display:grid;grid-template-columns:minmax(76px,auto) minmax(0,1fr);gap:3px 10px;margin:8px 0}.lezsp dt{color:var(--dsw-alias-label-tertiary)}.lezsp dd{margin:0;min-width:0;overflow-wrap:anywhere}
-      .lezsp ul,.lezsp ol{padding-left:20px;margin:6px 0}.lezsp .lezsp-route{font-family:ui-monospace,monospace;font-size:11px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}
-      .lezsp pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-family:ui-monospace,monospace;font-size:11px;margin:8px 0}
-      .lezsp .lezsp-model-choice{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start;padding:7px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-module-platform);cursor:pointer;min-width:0}
-      .lezsp .lezsp-model-choice.checked{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}
-      .lezsp .lezsp-model-choice.stale{border-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
-      .lezsp .lezsp-choice-body{display:grid;gap:1px;min-width:0}.lezsp .lezsp-choice-name{font-size:12px;font-weight:700}
+      .lezsp .lezsp-switch-track{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--bg3);border:1px solid var(--line);transition:.15s}
+      .lezsp .lezsp-switch-track::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--tx2);transition:.15s}
+      .lezsp .lezsp-switch input:checked+.lezsp-switch-track{background:var(--blue);border-color:var(--blue)}
+      .lezsp .lezsp-switch input:checked+.lezsp-switch-track::after{transform:translateX(16px);background:#fff}
+      .lezsp .lezsp-switch input:focus-visible+.lezsp-switch-track{outline:2px solid var(--blue);outline-offset:2px}
+      .lezsp .lezsp-card-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0}
+      .lezsp .lezsp-card-name{font-size:14.5px;font-weight:700;color:var(--tx)}
+      .lezsp .lezsp-state{color:var(--tx3);font-size:12px}
+      .lezsp .lezsp-state.on{color:var(--blue);font-weight:600}
+      .lezsp .lezsp-state.warn{color:var(--warn);font-weight:600}
+      .lezsp .lezsp-detail-meta{margin-left:6px;color:var(--tx3);font-size:12px;font-weight:400}
+      .lezsp button,.lezsp-header button{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:6px 12px;background:var(--bg2);color:var(--tx);cursor:pointer;white-space:normal;overflow-wrap:anywhere;transition:.15s}
+      .lezsp button:hover:not(:disabled),.lezsp-header button:hover:not(:disabled){background:var(--bg3)}
+      .lezsp button:disabled{opacity:.5;cursor:not-allowed}
+      .lezsp .lezsp-primary{border-color:var(--blue);background:var(--blue);color:#fff;font-weight:600}
+      .lezsp .lezsp-primary:hover:not(:disabled){background:#3b7eef;border-color:#3b7eef}
+      .lezsp .lezsp-danger{color:var(--err)}
+      .lezsp .lezsp-ghost{border-color:transparent;background:transparent;color:var(--tx2)}
+      .lezsp .lezsp-ghost:hover:not(:disabled){background:var(--bg2);color:var(--tx)}
+      .lezsp .lezsp-small{padding:4px 10px;font-size:12px}
+      .lezsp .lezsp-link{padding:4px 8px;border:0;background:transparent;color:var(--tx2);font-weight:500}
+      .lezsp .lezsp-link:hover:not(:disabled){color:var(--tx);background:var(--bg2)}
+      .lezsp :is(button,input,textarea,select,summary):focus-visible,.lezsp-header button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+      .lezsp h1:focus-visible,.lezsp h2:focus-visible,.lezsp h3:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+      .lezsp fieldset{padding:14px 16px;margin:0 0 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);min-width:0}
+      .lezsp legend{padding:0 6px;font-size:13px;font-weight:700;color:var(--tx)}
+      .lezsp-field{display:grid;gap:6px;margin:0 0 12px;min-width:0}
+      .lezsp-field>span:first-child,.lezsp-label{font-size:12px;font-weight:600;color:var(--tx2)}
+      .lezsp input:not([type=checkbox]):not([type=radio]),.lezsp select,.lezsp textarea{
+        width:100%;min-width:0;max-width:100%;border:1px solid var(--line);border-radius:7px;
+        padding:7px 11px;background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;line-height:1.5;outline:none
+      }
+      .lezsp input:not([type=checkbox]):not([type=radio]):focus,.lezsp select:focus,.lezsp textarea:focus{border-color:var(--blue)}
+      .lezsp input::placeholder,.lezsp textarea::placeholder{color:var(--tx3)}
+      .lezsp textarea{resize:vertical;min-height:76px;overflow-wrap:anywhere}
+      .lezsp input[type=checkbox],.lezsp input[type=radio]{width:16px;height:16px;flex:none;margin:0;accent-color:var(--blue);cursor:pointer}
+      .lezsp :is(input,textarea,select,fieldset)[aria-invalid="true"]{border-color:var(--err)}
+      .lezsp .lezsp-error{color:var(--err);font-size:12px;font-weight:600}
+      .lezsp .lezsp-warn{color:var(--warn);font-size:12px;font-weight:600}
+      .lezsp .lezsp-banner{margin:10px 0;padding:10px 14px;border:1px solid rgba(76,141,255,.35);border-radius:8px;background:rgba(76,141,255,.07);color:var(--tx);font-size:12.5px;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+      .lezsp .lezsp-banner.warn{border-color:rgba(232,163,61,.35);background:rgba(232,163,61,.08);color:var(--warn)}
+      .lezsp .lezsp-banner.err{border-color:rgba(224,108,95,.4);background:rgba(224,108,95,.08);color:var(--err)}
+      .lezsp dl{display:grid;grid-template-columns:minmax(76px,auto) minmax(0,1fr);gap:4px 12px;margin:8px 0}.lezsp dt{color:var(--tx3)}.lezsp dd{margin:0;min-width:0;overflow-wrap:anywhere}
+      .lezsp .lezsp-route{font-family:var(--mono);font-size:11.5px;color:var(--tx2);overflow-wrap:anywhere}
+      .lezsp pre,.lezsp .lezsp-preview{
+        max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:12px;
+        color:var(--tx2);background:var(--bg0);border:1px solid var(--line);border-radius:8px;
+        padding:12px 14px;margin:6px 0;max-height:220px;overflow-y:auto
+      }
+      .lezsp .lezsp-model-choice{
+        display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line-soft);
+        border-radius:8px;background:var(--bg2);cursor:pointer;min-width:0;flex-wrap:wrap;transition:.15s
+      }
+      .lezsp .lezsp-model-choice:hover{border-color:var(--line)}
+      .lezsp .lezsp-model-choice.checked{border-color:var(--blue-dim);background:rgba(76,141,255,.06)}
+      .lezsp .lezsp-model-choice.stale{border-color:rgba(232,163,61,.45)}
+      .lezsp .lezsp-choice-body{flex:1;min-width:140px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .lezsp .lezsp-choice-name{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--tx)}
+      .lezsp .lezsp-choice-pv{font-family:var(--mono);font-size:11px;color:var(--tx3);margin-left:auto}
       .lezsp .lezsp-pool-item{display:grid;gap:6px;min-width:0}
-      .lezsp .lezsp-pool-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px;align-items:start;padding:8px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-1);min-width:0}
-      .lezsp select.lezsp-effort{width:auto;min-width:104px;max-width:150px;padding:4px 6px;font-size:12px}
-      .lezsp .lezsp-pool-row.stale{border-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
-      .lezsp .lezsp-provider-group{display:grid;gap:8px;margin:10px 0}
-      .lezsp .lezsp-provider-title{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:12px}
-      .lezsp .lezsp-empty{padding:14px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;color:var(--dsw-alias-label-tertiary);font-size:12px;text-align:center}
-      .lezsp .lezsp-record{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);min-width:0}
-      .lezsp .lezsp-record summary{padding:9px 10px;cursor:pointer;list-style-position:inside}.lezsp .lezsp-record-body{padding:0 10px 10px;border-top:1px solid var(--dsw-alias-border-l2)}
-      .lezsp .lezsp-record-head{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:baseline}.lezsp .lezsp-time{color:var(--dsw-alias-label-tertiary);font-size:11px;font-variant-numeric:tabular-nums}
-      .lezsp .lezsp-status-tag{padding:0 6px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
-      .lezsp .lezsp-form-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l2)}
-      .lezsp .lezsp-section-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 8px}
-      .lezsp .lezsp-count{color:var(--dsw-alias-label-tertiary);font-weight:400;font-size:12px}
-      .lezsp .lezsp-detail-title{margin-top:8px;font-size:16px;line-height:1.35}.lezsp .lezsp-note{margin:9px 0;padding:8px 10px;border:1px solid var(--dsw-alias-border-l2);border-left:4px solid var(--dsw-alias-brand-primary);border-radius:8px;background:var(--dsw-alias-bg-layer-1);font-size:12px}
-      .lezsp .lezsp-note.warn{border-left-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
-      .lezsp .lezsp-session-chip{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:600;white-space:nowrap}
-      .lezsp .lezsp-title-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;min-width:0}
-      .lezsp .lezsp-title-row h1{min-width:0}
-      .lezsp .lezsp-head-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
-      .lezsp .lezsp-version-badge{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:700}
-      .lezsp .lezsp-repo-link{color:var(--dsw-alias-brand-primary);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
-      .lezsp .lezsp-repo-link:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
+      .lezsp .lezsp-pool-row{
+        display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line-soft);
+        border-radius:8px;background:var(--bg2);min-width:0;flex-wrap:wrap
+      }
+      .lezsp .lezsp-pool-row.checked{border-color:var(--blue-dim)}
+      .lezsp .lezsp-pool-row.stale{border-color:rgba(232,163,61,.45)}
+      .lezsp select.lezsp-effort{width:auto;min-width:128px;max-width:168px;padding:4px 8px;font-size:12px}
+      .lezsp .lezsp-provider-group{display:grid;gap:6px;margin:8px 0}
+      .lezsp .lezsp-provider-title{display:flex;align-items:center;gap:8px;padding:6px 2px 2px;color:var(--tx2);font-family:var(--mono);font-size:12px;font-weight:600}
+      .lezsp .lezsp-provider-title .lezsp-count{margin-left:auto;font-size:11px;color:var(--tx3)}
+      .lezsp .lezsp-empty{padding:16px;border:1px dashed var(--line);border-radius:var(--r);color:var(--tx3);font-size:12.5px;text-align:center}
+      .lezsp .lezsp-record{border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);min-width:0}
+      .lezsp .lezsp-record summary{padding:10px 14px;cursor:pointer;list-style-position:inside}.lezsp .lezsp-record-body{padding:0 14px 12px;border-top:1px solid var(--line-soft)}
+      .lezsp .lezsp-record-head{display:inline-flex;flex-wrap:wrap;gap:6px 12px;align-items:center}.lezsp .lezsp-time{font-family:var(--mono);color:var(--tx3);font-size:11.5px}
+      .lezsp .lezsp-status-tag{padding:1px 8px;border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;color:var(--tx2);background:var(--bg2)}
+      .lezsp .lezsp-form-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line-soft)}
+      .lezsp .lezsp-section-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 10px}
+      .lezsp .lezsp-count{color:var(--tx3);font-weight:400;font-size:12px}
+      .lezsp .lezsp-detail-title{font-size:16px;line-height:1.35}
+      .lezsp .lezsp-note{margin:8px 0;padding:9px 12px;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;background:var(--bg1);font-size:12px}
+      .lezsp .lezsp-note.warn{border-left-color:var(--warn)}
+      .lezsp .lezsp-session-chip{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--bg2);color:var(--tx3);font-size:11px;font-weight:500;white-space:nowrap}
+      .lezsp .lezsp-title-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+      .lezsp .lezsp-head-meta{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+      .lezsp .lezsp-version-badge{color:var(--tx2);font-family:var(--mono);font-weight:600}
+      .lezsp .lezsp-repo-link{color:var(--blue);font-size:12px;font-weight:500;text-decoration:none;white-space:nowrap}
+      .lezsp .lezsp-repo-link:hover{text-decoration:underline}
       .lezsp-header{display:inline-flex;gap:4px;align-items:center;min-width:0}.lezsp-header button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:4px;border:0;background:transparent;color:var(--dsw-alias-label-secondary)}
-      .lezsp .lezsp-status-divider{margin-top:8px;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l2)}
-      .lezsp .lezsp-guide-rule{display:grid;gap:8px;margin:0 0 10px;padding:9px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
-      .lezsp .lezsp-guide-chips{margin-top:2px}
-      .lezsp .lezsp-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:var(--dsw-alias-bg-module-platform);font-family:ui-monospace,monospace;font-size:11px;color:var(--dsw-alias-label-secondary)}
-      .lezsp .lezsp-chip-x{padding:0 2px;border:0;background:transparent;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:1}
-      .lezsp .lezsp-guide-picker{margin:4px 0 2px;padding:9px 10px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-module-platform)}
-      .lezsp .lezsp-statusbar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-start;margin:10px 0;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
-      .lezsp .lezsp-sb-item{display:grid;gap:4px;min-width:0}
-      .lezsp .lezsp-sb-item+.lezsp-sb-item{padding-left:20px;border-left:1px solid var(--dsw-alias-border-l2)}
-      .lezsp .lezsp-sb-label{color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700;letter-spacing:.3px}
-      .lezsp .lezsp-sb-value{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;font-weight:600}
-      .lezsp .lezsp-sb-action{margin-left:auto}
-      .lezsp .lezsp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:12px}
-      .lezsp .lezsp-chip-group{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-      .lezsp .lezsp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
-      .lezsp .lezsp-drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,94vw);z-index:41;overflow:auto;padding:16px 18px;border-left:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-module-platform);box-shadow:-16px 0 40px rgba(0,0,0,.35)}
-      .lezsp .lezsp-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+      .lezsp .lezsp-guide-rule{display:grid;gap:8px;margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+      .lezsp .lezsp-rule-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .lezsp .lezsp-rule-head input.lezsp-scene-input{width:220px;max-width:100%;flex:0 1 220px}
+      .lezsp .lezsp-guide-chips,.lezsp .lezsp-chip-group{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+      .lezsp .lezsp-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line-soft);border-radius:5px;background:var(--bg2);font-family:var(--mono);font-size:11px;color:var(--tx2)}
+      .lezsp .lezsp-chip .pv{color:var(--tx3)}
+      .lezsp .lezsp-chip .ord{color:var(--blue);font-weight:600}
+      .lezsp .lezsp-chip-x{padding:0 2px;border:0;background:transparent;color:var(--err);font-size:11px;line-height:1;cursor:pointer}
+      .lezsp .lezsp-guide-picker{display:grid;gap:8px;margin-top:6px;padding:12px;border:1px dashed var(--line);border-radius:8px;background:var(--bg1)}
+      .lezsp .lezsp-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+      .lezsp .lezsp-toolbar input[type=search]{flex:1;min-width:160px}
       .lezsp .lezsp-filter-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
-      .lezsp .lezsp-filter-row button[aria-pressed="true"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary);font-weight:700}
-      .lezsp .lezsp-dirtybar{position:sticky;bottom:10px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border:1px solid var(--dsw-alias-brand-primary);border-radius:10px;background:var(--dsw-alias-bg-layer-3);box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px}
-      @media(max-width:420px){.lezsp{padding:10px}.lezsp-nav button{font-size:11px}.lezsp dl{grid-template-columns:1fr;gap:1px}.lezsp dd{margin-bottom:6px}.lezsp-pool-row{grid-template-columns:auto minmax(0,1fr)}}
+      .lezsp .lezsp-filter-row button[aria-pressed="true"]{border-color:var(--blue);color:var(--blue);background:rgba(76,141,255,.1);font-weight:600}
+      .lezsp .lezsp-dirtybar{position:sticky;bottom:10px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;border:1px solid rgba(76,141,255,.5);border-radius:10px;background:var(--bg3);color:var(--blue);box-shadow:0 8px 28px rgba(0,0,0,.5);font-size:13px}
+      @media(max-width:480px){.lezsp{padding:12px}.lezsp-nav button{padding:6px 12px;font-size:12px}.lezsp dl{grid-template-columns:1fr;gap:2px}}
     `;
 
     // @lez-pure-start
@@ -962,7 +1009,37 @@ window.__ModuleLoader__.load({
               : [...draft.models].map((key) => JSON.parse(key)).map(([provider, model]) => ({ provider, model }));
             return { id: draft.id || undefined, name: draft.name.trim(), type: draft.type, models, fixedProvider: fixed[0], fixedModel: fixed[1], strategyText: draft.strategyText };
           }
-          function saveStrategy() {
+          /** 策略编辑器：把当前搜索筛选出的可用模型全部选入策略候选子集。 */
+          function selectVisibleChoice(choiceKeys, choiceLabel, staleKeys) {
+            commit((state) => {
+              const draft = state.strategyDraft;
+              if (!draft) return state;
+              const nextModels = new Set(draft.models);
+              for (const key of choiceKeys) {
+                if (staleKeys.has(key)) continue;
+                if (!matchesModelQuery(choiceLabel(key), state.choiceQuery)) continue;
+                if (draft.type === 'fixed') {
+                  return { ...state, strategyDraft: { ...draft, models: new Set([key]), fixedRoute: key, dirty: true } };
+                }
+                if (nextModels.size >= 200) break;
+                nextModels.add(key);
+              }
+              return { ...state, strategyDraft: { ...draft, models: nextModels, dirty: true } };
+            });
+          }
+          /** 策略编辑器：清空当前已选候选子集。 */
+          function clearChoice() {
+            commit((state) => {
+              const draft = state.strategyDraft;
+              if (!draft) return state;
+              return { ...state, strategyDraft: { ...draft, models: new Set(), fixedRoute: '', dirty: true } };
+            });
+          }
+          /**
+           * 保存策略；若策略勾选了尚未入池的可用候选模型，先自动并入全局模型池再保存策略。
+           */
+          async function saveStrategy() {
+            // 1. 表单基础校验，不通过则聚焦首个错误字段。
             const errors = validateStrategyDraft();
             if (Object.keys(errors).length) {
               commit((state) => ({ ...state, error: { message: t('formError'), fields: errors } }));
@@ -971,11 +1048,14 @@ window.__ModuleLoader__.load({
               return;
             }
             const current = uiRef.current;
-            const saved = current.strategyDraft?.id ? current.snap.management.strategies.find((row) => row.id === current.strategyDraft.id) : null;
-            const activeSnapshot = current.snap.management.active?.snapshot || null;
-            const isActive = Boolean(saved && current.snap.management.active?.strategyId === saved.id);
-            // A lagging legacy snapshot is aligned by the Host on a save even
-            // without field edits, so that case must still reach the Host.
+            const snap = current.snap;
+            if (!snap) return;
+            if (!snap.canEdit) { warn(t('readOnly')); return; }
+            if (current.conflict) { warn(t('conflictHelp')); return; }
+            if (current.mustRefresh) { warn(t('mustRefresh')); return; }
+            const saved = current.strategyDraft?.id ? snap.management.strategies.find((row) => row.id === current.strategyDraft.id) : null;
+            const activeSnapshot = snap.management.active?.snapshot || null;
+            const isActive = Boolean(saved && snap.management.active?.strategyId === saved.id);
             const needsAlignment = Boolean(isActive && activeSnapshot && (activeSnapshot.version || 0) < (saved.version || 0));
             if (!current.strategyDraft?.dirty && !needsAlignment) {
               commit((state) => ({ ...state, error: null, notice: t('noChanges'), noticeKind: '' }));
@@ -985,6 +1065,27 @@ window.__ModuleLoader__.load({
               const blocked = capacityBlockMessage('strategy.enable');
               if (blocked) { commit((state) => ({ ...state, error: { message: blocked }, notice: null })); return; }
             }
+            // 2. 检查策略候选子集中是否有尚未入池的可用模型；若有则先自动并入池。
+            const savedPoolKeys = new Set(snap.management.pool.map(keyOf));
+            const newPoolKeys = [...current.strategyDraft.models].filter((key) => !savedPoolKeys.has(key) && snap.candidates.some((row) => keyOf(row) === key && row.authorized && row.available));
+            if (newPoolKeys.length && !operation.current) {
+              try {
+                const mergedPool = [
+                  ...snap.management.pool.map((entry) => ({ provider: entry.provider, model: entry.model, purpose: entry.purpose || '', note: entry.note || '', effort: entry.effort || '' })),
+                  ...newPoolKeys.map((key) => {
+                    const candidate = snap.candidates.find((row) => keyOf(row) === key);
+                    const [provider, model] = JSON.parse(key);
+                    return { provider, model, purpose: (candidate?.description || '').slice(0, 500), note: '', effort: '' };
+                  }),
+                ].slice(0, 200);
+                const poolSnap = await request({ action: 'pool.save', expectedRevision: snap.revision, pool: mergedPool });
+                commit((state) => ({ ...state, snap: poolSnap, poolDraft: draftsFrom(poolSnap).poolDraft }));
+              } catch (error) {
+                commit((state) => ({ ...state, error: { message: error?.message || String(error) }, notice: null }));
+                return;
+              }
+            }
+            // 3. 提交策略保存，成功后返回全局设置页。
             mutation('strategy.save', { strategy: strategyBody() }, { strategy: true, notice: isActive ? 'savedActive' : 'savedStrategy' });
           }
           function loadServer() {
@@ -1252,66 +1353,65 @@ window.__ModuleLoader__.load({
             return fmt(t('reasoningLine'), { names }) + (current ? fmt(t('reasoningDefault'), { name: current.name || current.id }) : '');
           };
 
+          /** 渲染模型 chips 列表（带弱化 provider 前缀，超过 6 个时折叠显示 +N）。 */
+          function renderModelChips(routes, maxVisible = 6) {
+            const list = routes || [];
+            if (!list.length) return h('span', { className: 'lezsp-muted' }, t('noModelsSelected'));
+            const shown = list.slice(0, maxVisible);
+            const rest = list.length - shown.length;
+            return h('div', { className: 'lezsp-chip-group' },
+              shown.map((route) => {
+                const entry = snap.management.pool.find((row) => keyOf(row) === keyOf(route));
+                const label = entry?.effort ? `${modelName(route)} (${entry.effort})` : modelName(route);
+                return h('span', { key: keyOf(route), className: 'lezsp-chip' },
+                  h('span', { className: 'pv' }, route.provider), ' ', label);
+              }),
+              rest > 0 ? h('span', { className: 'lezsp-chip', title: list.slice(maxVisible).map((r) => `${r.provider}/${modelName(r)}`).join('、') }, `+${rest}`) : null);
+          }
+
           function strategyCard(strategy) {
             const isActive = active?.strategyId === strategy.id;
             const isDefault = snap.defaultSetting.snapshot?.sourceId === strategy.id;
             const defaultStale = isDefault && (snap.defaultSetting.snapshot.version || 0) < (strategy.version || 1);
             const adjust = Boolean(strategy.needsAdjust);
-            // F-50: pendingRecovery = references that stay in the saved pool but
-            // are not Host-authorized or cannot be resolved right now. They are
-            // kept and reported separately from outside-pool (needsAdjust).
             const pendingRoutes = (strategy.models || []).filter((route) => {
               if (!snap.management.pool.some((entry) => keyOf(entry) === keyOf(route))) return false;
               const candidate = snap.candidates.find((row) => keyOf(row) === keyOf(route));
               return !candidate?.authorized || !candidate?.available;
             });
             const pending = Boolean(strategy.pendingRecovery) && pendingRoutes.length > 0;
-            const byProvider = new Map();
-            for (const route of strategy.models || []) {
-              const entry = snap.management.pool.find((row) => keyOf(row) === keyOf(route));
-              // 池里配置了思考强度时卡片直接标出来，避免只在能力卡里才看得到。
-              const label = entry?.effort ? `${modelName(route)} (${entry.effort})` : modelName(route);
-              if (!byProvider.has(route.provider)) byProvider.set(route.provider, []);
-              byProvider.get(route.provider).push(label);
-            }
-            const modelLines = byProvider.size
-              ? [...byProvider].map(([provider, names]) => `${provider}: ${names.join('、')}`)
-              : [t('noModelsSelected')];
-            const stateText = adjust ? t('adjustBadge') : pending ? t('pendingBadge') : isActive ? t('activeBadge') : t('stateOff');
-            const stateClass = `lezsp-state${adjust || pending ? ' warn' : isActive ? ' on' : ''}`;
-            // 策略库卡片：编辑（整页）/ 设默认 / 删除；启用选择移到「当前会话」页。
+            // 策略库卡片：对齐原型 v3 的标题徽标 + 类型标签 + 模型 chips + 底部编辑/设默认/删除。
             return h('article', { key: strategy.id, className: `lezsp-card${isActive ? ' active' : ''}`, 'aria-labelledby': idFor(`strategy-${strategy.id}`), tabIndex: -1 },
-              h('p', { className: 'lezsp-card-head' },
-                h('strong', { className: 'lezsp-card-name', id: idFor(`strategy-${strategy.id}`) }, strategy.name),
-                isActive ? badge(t('activeBadge'), 'on') : null,
-                isDefault ? badge(defaultStale ? t('defaultStaleBadge') : t('defaultBadge'), defaultStale ? 'warn' : '') : null,
+              h('h3', { className: 'lezsp-card-head' },
+                h('span', { className: 'lezsp-card-name', id: idFor(`strategy-${strategy.id}`) }, strategy.name),
+                isActive ? badge(t('activeBadge'), 'blue') : null,
+                isDefault ? badge(defaultStale ? t('defaultStaleBadge') : t('defaultBadge'), defaultStale ? 'warn' : 'ok') : null,
                 adjust ? badge(t('adjustBadge'), 'warn') : pending ? badge(t('pendingBadge'), 'warn') : null),
-              h('div', { className: 'lezsp-badges', style: { marginTop: '6px' } },
-                badge(typeLabel(strategy.type)),
-                h('span', { className: stateClass }, stateText)),
-              h('div', { className: 'lezsp-chip-group' }, [...byProvider].map(([provider, names]) => names.map((label) => h('span', { key: `${provider}:${label}`, className: 'lezsp-chip' }, `${provider} · ${label}`)))),
-              !byProvider.size ? h('p', { className: 'lezsp-muted' }, t('noModelsSelected')) : null,
+              h('div', { className: 'lezsp-badges' },
+                badge(typeLabel(strategy.type))),
+              renderModelChips(strategy.models || []),
               adjust ? h('p', { className: 'lezsp-error' }, t('needsAdjustHint'))
                 : pending ? h('p', { className: 'lezsp-warn' }, fmt(t('pendingRecoveryHint'), { models: [...new Set(pendingRoutes.map((route) => modelName(route)))].join('、') })) : null,
               strategy.type === 'inherit' ? h('p', { className: 'lezsp-muted' }, t('legacyHint')) : null,
               h('div', { className: 'lezsp-actions' },
-                button(t('edit'), () => openStrategy(strategy.id), { className: 'lezsp-small', disabled: busy, aria: fmt(t('editLabel'), { name: strategy.name }) }),
-                button(t('setDefault'), () => setDefault(strategy.id), { className: 'lezsp-small', disabled: !editable || isDefault || strategy.type === 'inherit', aria: fmt(t('setDefaultLabel'), { name: strategy.name }) }),
+                button(t('edit'), () => openStrategy(strategy.id), { disabled: busy, aria: fmt(t('editLabel'), { name: strategy.name }) }),
+                button(t('setDefault'), () => setDefault(strategy.id), { disabled: !editable || isDefault || strategy.type === 'inherit', aria: fmt(t('setDefaultLabel'), { name: strategy.name }) }),
                 button(t('delete'), () => {
                   if (!window.confirm(fmt(t('deleteConfirm'), { name: strategy.name }))) return;
                   mutation('strategy.delete', { id: strategy.id }, { notice: 'deletedNotice', name: strategy.name });
-                }, { className: 'lezsp-small', disabled: !editable || isActive || isDefault, aria: fmt(t('deleteLabel'), { name: strategy.name }) })),
+                }, { className: 'lezsp-danger', disabled: !editable || isActive || isDefault, aria: fmt(t('deleteLabel'), { name: strategy.name }) })),
               isActive ? h('p', { className: 'lezsp-muted' }, t('deleteActiveHint'))
                 : isDefault ? h('p', { className: 'lezsp-muted' }, t('deleteDefaultHint')) : null);
           }
 
           /**
            * 「当前会话」页：只做一件事——为本会话选择启用哪份策略。
-           * 策略的新增/编辑/删除与全局默认都在「策略库」页，这里不放管理按钮。
+           * 策略的新增/编辑/删除与全局默认都在「全局设置」页，这里不放管理按钮。
            */
           function sessionPage() {
             const renderRow = (strategy) => {
               const isActive = active?.strategyId === strategy.id;
+              const isDefault = snap.defaultSetting.snapshot?.sourceId === strategy.id;
               const adjust = Boolean(strategy.needsAdjust);
               const pendingRoutes = (strategy.models || []).filter((route) => {
                 if (!snap.management.pool.some((entry) => keyOf(entry) === keyOf(route))) return false;
@@ -1320,43 +1420,40 @@ window.__ModuleLoader__.load({
               });
               const pending = Boolean(strategy.pendingRecovery) && pendingRoutes.length > 0;
               const capacityReason = capacityBlockMessage('strategy.enable');
-              const byProvider = new Map();
-              for (const route of strategy.models || []) {
-                const label = modelName(route);
-                if (!byProvider.has(route.provider)) byProvider.set(route.provider, []);
-                byProvider.get(route.provider).push(label);
-              }
               return h('article', { key: strategy.id, className: `lezsp-card${isActive ? ' active' : ''}` },
-                h('p', { className: 'lezsp-card-head' },
-                  h('strong', { className: 'lezsp-card-name' }, strategy.name),
-                  isActive ? badge(t('activeBadge'), 'on') : null,
-                  adjust ? badge(t('adjustBadge'), 'warn') : pending ? badge(t('pendingBadge'), 'warn') : null,
-                  badge(typeLabel(strategy.type))),
-                h('div', { className: 'lezsp-chip-group' }, [...byProvider].map(([provider, names]) => names.map((label) => h('span', { key: `${provider}:${label}`, className: 'lezsp-chip' }, `${provider} · ${label}`)))),
+                h('h3', { className: 'lezsp-card-head' },
+                  h('span', { className: 'lezsp-card-name' }, strategy.name),
+                  isActive ? badge(t('activeBadge'), 'blue') : null,
+                  isDefault ? badge(t('defaultBadge'), 'ok') : null,
+                  adjust ? badge(t('adjustBadge'), 'warn') : pending ? badge(t('pendingBadge'), 'warn') : null),
+                h('div', { className: 'lezsp-badges' }, badge(typeLabel(strategy.type))),
+                renderModelChips(strategy.models || []),
                 adjust ? h('p', { className: 'lezsp-error' }, t('needsAdjustHint'))
                   : pending ? h('p', { className: 'lezsp-warn' }, fmt(t('pendingRecoveryHint'), { models: [...new Set(pendingRoutes.map((route) => modelName(route)))].join('、') })) : null,
                 strategy.type === 'inherit' ? h('p', { className: 'lezsp-muted' }, t('legacyHint')) : null,
-                h('div', { className: 'lezsp-actions' },
+                h('div', { className: 'lezsp-actions lezsp-between' },
+                  h('span', { className: 'lezsp-muted' }, fmt(t('modelCount'), { count: (strategy.models || []).length })),
                   isActive
-                    ? button(t('disable'), () => mutation('strategy.close', {}, { notice: null }), { className: 'lezsp-small', disabled: !editable, aria: fmt(t('disableLabel'), { name: strategy.name }) })
+                    ? button(t('disable'), () => mutation('strategy.close', {}, { notice: null }), { disabled: !editable, aria: fmt(t('disableLabel'), { name: strategy.name }) })
                     : strategy.type === 'inherit' ? null : button(t('enable'), () => {
                       if (pending) {
                         warn(fmt(t('warningPendingRecovery'), { name: strategy.name, models: [...new Set(pendingRoutes.map((route) => modelName(route)))].join('、') }));
                         return;
                       }
                       mutation('strategy.enable', { id: strategy.id }, { notice: null });
-                    }, { className: 'lezsp-small lezsp-primary', disabled: !editable || adjust || Boolean(capacityReason), title: capacityReason || undefined, aria: fmt(t('enableLabel'), { name: strategy.name }) })));
+                    }, { className: 'lezsp-primary', disabled: !editable || adjust || Boolean(capacityReason), title: capacityReason || undefined, aria: fmt(t('enableLabel'), { name: strategy.name }) })));
             };
             return h(React.Fragment, null,
               h('section', { className: 'lezsp-status', 'aria-labelledby': idFor('sessionTitle') },
-                h('div', { className: 'lezsp-between lezsp-row' },
-                  h('h2', { id: idFor('sessionTitle'), tabIndex: -1, ref: titleRef('session') }, t('sessionTitle')),
-                  switchControl('policyToggle', Boolean(active), !editable, active ? t('policyLabelOn') : t('policyLabelOff'), (checked) => { if (checked) restoreActive(); else closeActive(); })),
-                h('p', null, active
+                h('strong', { id: idFor('sessionTitle'), tabIndex: -1, ref: titleRef('session') }, t('sessionTitle')),
+                switchControl('policyToggle', Boolean(active), !editable, active ? t('policyLabelOn') : t('policyLabelOff'), (checked) => { if (checked) restoreActive(); else closeActive(); }),
+                h('span', null, active
                   ? fmt(t('activeLine'), { name: active.snapshot.name, type: typeLabel(active.snapshot.type), target: active.snapshot.type === 'fixed' ? activeTarget : fmt(t('targetAuto'), { count: activeTarget }) })
                   : t('closedSummary'))),
               hostCapacityNotice(),
-              h('p', { className: 'lezsp-muted' }, t('sessionPickHint')),
+              h('div', { className: 'lezsp-section-head' },
+                h('h2', null, t('sectionSessionPick')),
+                h('span', { className: 'lezsp-muted' }, t('sessionPickHint'))),
               snap.management.strategies.length
                 ? h('div', { className: 'lezsp-cards' }, snap.management.strategies.map(renderRow))
                 : h('div', { className: 'lezsp-empty' }, t('emptyStrategies')));
@@ -1371,16 +1468,10 @@ window.__ModuleLoader__.load({
                 + (valueLimits ? fmt(t('defaultLimitsInline'), { depth: valueLimits.maxDepth, active: valueLimits.maxActive }) : '')
               : t('noDefault');
             const defaultConflict = Boolean(valueLimits && (valueLimits.maxDepth > snap.host.maxDepth || (capacity.known && valueLimits.maxActive > capacity.raw)));
-            // The Host computes these from the stored default and the live
-            // authorization/availability lists; the panel only reports them and
-            // adds no action of its own.
             const modelConflict = conflictRoutes(snap.defaultSetting);
             const skipped = skippedRoutes(snap.management);
             const coveredByConflict = new Set(modelConflict.unauthorized.map(keyOf));
             const uncoveredSkipped = skipped.filter((route) => !coveredByConflict.has(keyOf(route)));
-            // De-duplication rule: a model already named by the default warning is
-            // not named again in the skipped banner; the skipped banner then points
-            // at the warning above. Models only recorded as skipped keep their names.
             const skippedNames = modelConflict.unauthorized.length ? uncoveredSkipped : skipped;
             const skippedText = skipped.length
               ? (skippedNames.length
@@ -1389,17 +1480,16 @@ window.__ModuleLoader__.load({
               : '';
             const defaultSource = defaultValue?.sourceId ? strategyById(defaultValue.sourceId) : null;
             const defaultStale = Boolean(defaultValue && defaultSource && (defaultValue.version || 0) < (defaultSource.version || 1));
-            // 策略库页：全局默认设置 + 策略增删改；会话内启用选择在「当前会话」页。
+            // 全局设置页：新会话默认策略 + 策略库 + 模型池 + 并发限制。
             return h(React.Fragment, null,
               h('section', { className: 'lezsp-status', 'aria-labelledby': idFor('defaultTitle') },
-                h('div', { className: 'lezsp-between lezsp-row' },
-                  h('h2', { id: idFor('defaultTitle'), tabIndex: -1, ref: titleRef('strategies') }, t('defaultTitle')),
-                  switchControl('defaultToggle', Boolean(defaultValue), !editable, defaultValue ? t('defaultLabelOn') : t('defaultLabelOff'), toggleDefault)),
-                h('p', null, defaultText)),
+                h('strong', { id: idFor('defaultTitle'), tabIndex: -1, ref: titleRef('strategies') }, t('defaultTitle')),
+                switchControl('defaultToggle', Boolean(defaultValue), !editable, defaultValue ? t('defaultLabelOn') : t('defaultLabelOff'), toggleDefault),
+                h('span', null, defaultText),
+                h('span', { className: 'lezsp-muted', style: { marginLeft: 'auto' } }, t('defaultOnlyNewHint'))),
               defaultStale ? h('div', { className: 'lezsp-banner warn', role: 'status' },
-                h('p', null, fmt(t('defaultStaleHint'), { name: defaultValue.name })),
-                h('div', { className: 'lezsp-actions' },
-                  button(t('syncDefault'), () => setDefault(defaultValue.sourceId), { className: 'lezsp-small lezsp-primary', disabled: !editable }))) : null,
+                h('span', null, '⚠ ' + fmt(t('defaultStaleHint'), { name: defaultValue.name })),
+                button(t('syncDefault'), () => setDefault(defaultValue.sourceId), { className: 'lezsp-small lezsp-primary', disabled: !editable })) : null,
               h(React.Fragment, null,
                 defaultConflict ? banner(fmt(t('defaultConflict'), { depth: valueLimits.maxDepth, active: valueLimits.maxActive, ceilingDepth: snap.host.maxDepth, ceilingActive: capacity.known ? capacity.raw : '—' }), 'warn') : null,
                 modelConflict.unauthorized.length
@@ -1411,8 +1501,8 @@ window.__ModuleLoader__.load({
               hostCapacityNotice(),
               savedLimitsOver && capacity.known ? banner(fmt(t('hostLimitBlocked'), { depth: savedLimits.maxDepth, active: savedLimits.maxActive, ceilingDepth: snap.host.maxDepth, ceilingActive: capacity.raw }) + (active ? t('hostConflictActive') : ''), 'warn') : null,
               h('div', { className: 'lezsp-section-head' },
-                h('h2', { id: idFor('strategiesTitle'), tabIndex: -1 }, t('strategies'), ' ', h('span', { className: 'lezsp-count' }, fmt(t('countSuffix'), { count: snap.management.strategies.length }))),
-                button(t('newStrategy'), () => openStrategy(null), { className: 'lezsp-small lezsp-primary', disabled: !editable })),
+                h('h2', { id: idFor('strategiesTitle'), tabIndex: -1 }, t('strategies'), h('small', null, fmt(t('countSuffix'), { count: snap.management.strategies.length }))),
+                button('＋ ' + t('newStrategy'), () => openStrategy(null), { className: 'lezsp-primary', disabled: !editable })),
               snap.management.strategies.length
                 ? h('div', { className: 'lezsp-cards' }, snap.management.strategies.map(strategyCard))
                 : h('div', { className: 'lezsp-empty' }, t('emptyStrategies')),
@@ -1425,13 +1515,15 @@ window.__ModuleLoader__.load({
             const isActive = Boolean(saved && active?.strategyId === saved.id);
             const saveBlocked = isActive ? capacityBlockMessage('strategy.enable') : '';
             const pool = snap.management.pool;
-            const staleKeys = new Set([...draft.models].filter((key) => !pool.some((entry) => keyOf(entry) === key)));
-            // F-50: pool choices are shown available-first; in-pool but currently
-            // unavailable candidates sink with their reference kept, before the
-            // outside-pool references.
+            const savedPoolKeys = new Set(pool.map(keyOf));
+            // 候选列表同时展示「已在池中」与「宿主已授权可用但未入池」的候选，
+            // 未入池模型带「未入池」徽标，勾选保存策略时会自动并入模型池。
+            const availableNotInPoolKeys = snap.candidates.filter((row) => row.authorized && row.available && !savedPoolKeys.has(keyOf(row))).map(keyOf);
+            const staleKeys = new Set([...draft.models].filter((key) => !savedPoolKeys.has(key) && !availableNotInPoolKeys.includes(key)));
             const staleCandidateKeys = new Set(snap.candidates.filter((row) => !row.authorized || !row.available).map(keyOf));
             const poolChoiceKeys = [
               ...pool.map(keyOf).filter((key) => !staleCandidateKeys.has(key)),
+              ...availableNotInPoolKeys,
               ...pool.map(keyOf).filter((key) => staleCandidateKeys.has(key)),
             ];
             const fixedChoices = [...poolChoiceKeys, ...staleKeys];
@@ -1440,7 +1532,7 @@ window.__ModuleLoader__.load({
               const [provider, model] = JSON.parse(key);
               const entry = pool.find((row) => keyOf(row) === key);
               const candidate = snap.candidates.find((row) => keyOf(row) === key);
-              return { provider, model, name: entry?.name || candidate?.name || model };
+              return { provider, model, name: entry?.name || candidate?.name || model, effort: entry?.effort || '' };
             };
             const choose = (key, checked, type) => {
               if (type === 'fixed') {
@@ -1473,28 +1565,33 @@ window.__ModuleLoader__.load({
               const rows = visibleKeys.map((key) => ({ key, ...choiceLabel(key) }));
               // 2. 不可用提示只在确实存在对应行时显示。
               const showUnavailableHint = visibleKeys.some((key) => !staleKeys.has(key) && staleCandidateKeys.has(key));
-              // 3. 按 provider 分组，组内保留可用/不可用/池外引用的原始顺序。
+              // 3. 按 provider 分组，组内保留可用/未入池/不可用/池外引用的原始顺序。
               return h('div', { className: 'lezsp-stack' },
                 showUnavailableHint ? h('p', { className: 'lezsp-muted' }, t('unavailableGroupHint')) : null,
-                [...groupByProvider(rows)].map(([provider, providerRows]) => h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
-                  h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, providerRows.length)),
-                  h('div', { className: 'lezsp-stack' }, providerRows.map(({ key }) => {
-                    const outsidePool = staleKeys.has(key);
-                    const unavailable = !outsidePool && staleCandidateKeys.has(key);
-                    const info = choiceLabel(key);
-                    const checked = type === 'fixed' ? draft.fixedRoute === key : draft.models.has(key);
-                    return h('label', { key, className: `lezsp-model-choice ${checked ? 'checked' : ''} ${outsidePool || unavailable ? 'stale' : ''}` },
-                      h('input', { type: type === 'fixed' ? 'radio' : 'checkbox', name: type === 'fixed' ? idFor('fixedChoice') : undefined, checked, disabled: !editable, 'aria-label': (type === 'fixed' ? t('fixedPanel') : t('autoPanel')) + ': ' + info.name, onChange: (event) => choose(key, event.target.checked, type) }),
-                      h('span', { className: 'lezsp-choice-body' },
-                        h('span', { className: 'lezsp-choice-name' }, info.name, ' - ', h('span', { className: 'lezsp-muted' }, info.provider),
-                          outsidePool ? h('span', { className: 'lezsp-error' }, ' ' + t('staleRef'))
-                            : unavailable ? h('span', { className: 'lezsp-warn' }, ' ' + t('unavailableRef')) : null),
-                        outsidePool ? h('span', { className: 'lezsp-muted' }, t('staleRefHint')) : null));
-                  })))));
+                [...groupByProvider(rows)].map(([provider, providerRows]) => {
+                  const selectedInGroup = providerRows.filter(({ key }) => type === 'fixed' ? draft.fixedRoute === key : draft.models.has(key)).length;
+                  return h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
+                    h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, fmt(t('groupSelectedStat'), { count: selectedInGroup }))),
+                    h('div', { className: 'lezsp-stack' }, providerRows.map(({ key }) => {
+                      const outsidePool = staleKeys.has(key);
+                      const notInPool = !outsidePool && !savedPoolKeys.has(key);
+                      const unavailable = !outsidePool && staleCandidateKeys.has(key);
+                      const info = choiceLabel(key);
+                      const checked = type === 'fixed' ? draft.fixedRoute === key : draft.models.has(key);
+                      return h('label', { key, className: `lezsp-model-choice ${checked ? 'checked' : ''} ${outsidePool || unavailable ? 'stale' : ''}` },
+                        h('input', { type: type === 'fixed' ? 'radio' : 'checkbox', name: type === 'fixed' ? idFor('fixedChoice') : undefined, checked, disabled: !editable, 'aria-label': (type === 'fixed' ? t('fixedPanel') : t('autoPanel')) + ': ' + info.name, onChange: (event) => choose(key, event.target.checked, type) }),
+                        h('span', { className: 'lezsp-choice-body' },
+                          h('span', { className: 'lezsp-choice-name' }, info.name),
+                          notInPool ? badge(t('notInPoolBadge'), 'warn') : null,
+                          outsidePool ? h('span', { className: 'lezsp-error' }, t('staleRef'))
+                            : unavailable ? h('span', { className: 'lezsp-warn' }, t('unavailableRef')) : null,
+                          h('span', { className: 'lezsp-choice-pv' }, fmt(t('effortRowNote'), { effort: info.effort || t('effortDefault') }))));
+                    })));
+                }));
             };
             const typeChoices = h('div', { className: 'lezsp-seg', role: 'group', 'aria-label': t('typeLabel') },
-              h('button', { type: 'button', 'aria-pressed': draft.type === 'fixed', disabled: !editable, onClick: () => switchType('fixed') }, t('typeFixed')),
-              h('button', { type: 'button', 'aria-pressed': draft.type === 'auto', disabled: !editable, onClick: () => switchType('auto') }, t('typeAuto')));
+              h('button', { type: 'button', 'aria-pressed': draft.type === 'auto', disabled: !editable, onClick: () => switchType('auto') }, t('typeAuto')),
+              h('button', { type: 'button', 'aria-pressed': draft.type === 'fixed', disabled: !editable, onClick: () => switchType('fixed') }, t('typeFixed')));
             /**
              * 选择说明编辑器：结构化规则（场景→有序多模型）与自由文本双模式。
              * 规则模式的选模型面板内联展开，带搜索与 provider 分组，不使用任何弹层。
@@ -1514,10 +1611,7 @@ window.__ModuleLoader__.load({
                 if (ui.guidePicker !== index) return null;
                 const visibleKeys = candidateKeys.filter((key) => matchesModelQuery(choiceLabel(key), ui.guideQuery));
                 return h('div', { className: 'lezsp-guide-picker' },
-                  h('label', { className: 'lezsp-field', htmlFor: idFor(`guideSearch-${index}`) },
-                    h('span', null, t('searchModels')),
-                    h('input', { id: idFor(`guideSearch-${index}`), type: 'search', value: ui.guideQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, guideQuery: event.target.value })) })),
-                  h('p', { className: 'lezsp-muted' }, t('guidePickerHint')),
+                  h('input', { id: idFor(`guideSearch-${index}`), type: 'search', value: ui.guideQuery, disabled: !editable, 'aria-label': t('searchModels'), placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, guideQuery: event.target.value })) }),
                   visibleKeys.length
                     ? h('div', { className: 'lezsp-stack' }, [...groupByProvider(visibleKeys.map((key) => ({ key, ...choiceLabel(key) })))].map(([provider, rows]) => h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
                       h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, rows.length)),
@@ -1527,80 +1621,91 @@ window.__ModuleLoader__.load({
                         return h('label', { key, className: `lezsp-model-choice ${checked ? 'checked' : ''}` },
                           h('input', { type: 'checkbox', checked, disabled: !editable, 'aria-label': `${t('guidePickModel')}: ${name}`, onChange: () => toggleRuleModel(index, key) }),
                           h('span', { className: 'lezsp-choice-body' },
-                            h('span', { className: 'lezsp-choice-name' }, name, ' - ', h('span', { className: 'lezsp-muted' }, provider)),
-                            checked ? h('span', { className: 'lezsp-muted' }, fmt(t('guideOrder'), { order: order + 1 })) : null));
+                            h('span', { className: 'lezsp-choice-name' }, name),
+                            checked ? badge(fmt(t('guideOrder'), { order: order + 1 }), 'blue') : null,
+                            h('span', { className: 'lezsp-choice-pv' }, provider)));
                       })))))
                     : h('div', { className: 'lezsp-empty' }, t(candidateKeys.length ? 'noModelMatches' : 'errModels')));
               };
               const rulesEditor = h('div', null,
-                h('p', { className: 'lezsp-muted' }, t('guideRulesHint')),
+                h('div', { className: 'lezsp-between lezsp-row', style: { marginBottom: '10px' } },
+                  h('span', { className: 'lezsp-muted' }, t('guideRulesHint')),
+                  button(t('guideAddRule'), addGuideRule, { className: 'lezsp-small', disabled: !editable })),
                 rules.map((rule, index) => h('div', { key: index, className: 'lezsp-guide-rule' },
-                  h('div', { className: 'lezsp-row' },
+                  h('div', { className: 'lezsp-rule-head' },
                     h('span', { className: 'lezsp-count' }, `${index + 1}.`),
-                    h('input', { type: 'text', value: rule.scene, maxLength: 120, disabled: !editable, placeholder: t('guideScenePlaceholder'), 'aria-label': t('guideScenePlaceholder'), onChange: (event) => editGuide({ guideRules: rules.map((row, i) => i === index ? { ...row, scene: event.target.value } : row) }) }),
-                    button('▲', () => moveGuideRule(index, -1), { className: 'lezsp-small', disabled: !editable || index === 0, aria: t('guideMoveUp') }),
-                    button('▼', () => moveGuideRule(index, 1), { className: 'lezsp-small', disabled: !editable || index === rules.length - 1, aria: t('guideMoveDown') }),
-                    button('✕', () => removeGuideRule(index), { className: 'lezsp-small', disabled: !editable, aria: t('guideRemoveRule') })),
+                    h('span', { className: 'lezsp-muted' }, t('WhenTaskInvolves')),
+                    h('input', { type: 'text', className: 'lezsp-scene-input', value: rule.scene, maxLength: 120, disabled: !editable, placeholder: t('guideScenePlaceholder'), 'aria-label': t('guideScenePlaceholder'), onChange: (event) => editGuide({ guideRules: rules.map((row, i) => i === index ? { ...row, scene: event.target.value } : row) }) }),
+                    button('▲', () => moveGuideRule(index, -1), { className: 'lezsp-small lezsp-ghost', disabled: !editable || index === 0, aria: t('guideMoveUp') }),
+                    button('▼', () => moveGuideRule(index, 1), { className: 'lezsp-small lezsp-ghost', disabled: !editable || index === rules.length - 1, aria: t('guideMoveDown') }),
+                    h('span', { style: { flex: '1' } }),
+                    button('✕', () => removeGuideRule(index), { className: 'lezsp-small lezsp-ghost lezsp-danger', disabled: !editable, aria: t('guideRemoveRule') })),
                   h('div', { className: 'lezsp-row lezsp-guide-chips' },
                     rule.models.map((route, k) => h('span', { key: keyOf(route), className: 'lezsp-chip' },
-                      `${k + 1}) ${modelName(route)}`,
+                      h('span', { className: 'ord' }, `${k + 1})`), ' ', modelName(route),
                       button('✕', () => toggleRuleModel(index, keyOf(route)), { className: 'lezsp-chip-x', disabled: !editable, aria: t('guideRemoveModel') }))),
                     button(t('guidePickModel'), () => commit((state) => ({ ...state, guidePicker: state.guidePicker === index ? -1 : index, guideQuery: '' })), { className: 'lezsp-small', disabled: !editable || !candidateKeys.length })),
                   pickerPanel(rule, index))),
-                button(t('guideAddRule'), addGuideRule, { className: 'lezsp-small', disabled: !editable }),
                 h('label', { className: 'lezsp-field', htmlFor: idFor('guideFallback') },
                   h('span', null, t('guideFallback')),
                   h('input', { id: idFor('guideFallback'), type: 'text', maxLength: 500, value: draft.guideFallback || '', disabled: !editable, onChange: (event) => editGuide({ guideFallback: event.target.value }) })),
                 h('div', { className: 'lezsp-field' },
-                  h('span', null, t('guidePreview')),
-                  h('pre', null, draft.strategyText),
-                  h('small', { className: 'lezsp-muted' }, t('guidePreviewHint'))));
-              return h('fieldset', null,
-                h('legend', null, t('textLabel')),
-                modeSeg,
+                  h('span', null, t('guidePreview'), ' ', h('small', { className: 'lezsp-muted' }, t('guidePreviewHint'))),
+                  h('pre', { className: 'lezsp-preview' }, draft.strategyText)));
+              return h('section', null,
+                h('div', { className: 'lezsp-section-head' },
+                  h('h2', null, t('textLabel'), h('small', null, t('textHint'))),
+                  modeSeg),
                 draft.guideMode === 'rules' ? rulesEditor : freeEditor,
                 errors.text ? h('small', { className: 'lezsp-error' }, errors.text) : null);
             };
             return h('section', { 'aria-label': t('editStrategyTitle') },
-              h('div', { className: 'lezsp-between lezsp-row' },
-                button(t('back'), () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-link' }),
-                badge(saved ? (isActive ? t('activeBadge') : t('savedBadge')) : t('unsavedBadge'), isActive ? 'on' : '')),
-              h('h2', { className: 'lezsp-detail-title', tabIndex: -1, id: idFor('strategyDetailTitle'), ref: titleRef('strategyDetail') }, saved ? t('editStrategyTitle') : t('newStrategyTitle')),
-              h('p', { className: 'lezsp-muted' }, isActive ? t('detailSubActive') : saved ? t('detailSubSaved') : t('detailSubNew')),
+              button(t('back'), () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-link' }),
+              h('div', { className: 'lezsp-section-head', style: { marginTop: '8px' } },
+                h('div', null,
+                  h('h2', { className: 'lezsp-detail-title', tabIndex: -1, id: idFor('strategyDetailTitle'), ref: titleRef('strategyDetail') },
+                    (saved ? t('editStrategyTitle') : t('newStrategyTitle')) + (draft.name ? ` · ${draft.name}` : '')),
+                  h('p', { className: 'lezsp-muted' }, isActive ? t('detailSubActive') : saved ? t('detailSubSaved') : t('detailSubNew'))),
+                badge(saved ? (isActive ? t('activeBadge') : t('savedBadge')) : t('unsavedBadge'), isActive ? 'blue' : '')),
               !capacity.known ? hostCapacityNotice() : saveBlocked ? h('p', { className: 'lezsp-note warn', role: 'status' }, saveBlocked) : null,
               draft.converting ? h('p', { className: 'lezsp-note warn' }, t('convertedHint')) : null,
               h('form', { onSubmit: (event) => { event.preventDefault(); saveStrategy(); } },
-                h('div', { className: 'lezsp-grid' },
+                h('div', { className: 'lezsp-form2' },
                   h('label', { className: 'lezsp-field', htmlFor: idFor('sName') },
                     h('span', null, t('nameLabel')),
                     h('input', { id: idFor('sName'), type: 'text', maxLength: 60, autoComplete: 'off', value: draft.name, disabled: !editable, placeholder: t('namePlaceholder'), 'aria-invalid': errors.name ? 'true' : undefined, 'aria-describedby': errors.name ? idFor('sName-error') : undefined, onChange: (event) => editStrategyField('name', event.target.value) }),
                     errors.name ? h('small', { className: 'lezsp-error', id: idFor('sName-error') }, errors.name) : null),
                   h('div', { className: 'lezsp-field' }, h('span', null, t('typeLabel')), typeChoices)),
-                h('p', { className: 'lezsp-muted' }, draft.type === 'fixed' ? t('typeHintFixed') : t('typeHintAuto')),
-                h('fieldset', { id: idFor('sChoice'), tabIndex: -1, 'aria-label': t(draft.type === 'fixed' ? 'fixedPanel' : 'autoPanel'), 'aria-invalid': (errors.fixed || errors.models) ? 'true' : undefined },
-                  h('legend', null, draft.type === 'fixed' ? t('fixedPanel') : t('autoPanel')),
+                h('div', { id: idFor('sChoice'), className: 'lezsp-panel', tabIndex: -1, role: 'group', 'aria-label': t(draft.type === 'fixed' ? 'fixedPanel' : 'autoPanel') },
                   h('div', { className: 'lezsp-between lezsp-row' },
-                    h('span', { className: 'lezsp-muted' }, fmt(t('selectedCount'), { count: draft.models.size })),
+                    h('div', { className: 'lezsp-row' },
+                      h('strong', null, draft.type === 'fixed' ? t('fixedPanel') : t('autoPanel')),
+                      h('span', { className: 'lezsp-muted' }, fmt(t('selectedCount'), { count: draft.models.size }))),
                     button(ui.choiceOpen ? t('choiceCollapse') : t('choiceExpand'), () => commit((state) => ({ ...state, choiceOpen: !state.choiceOpen })), { className: 'lezsp-small' })),
-                  h('div', { className: 'lezsp-chip-group' }, [...draft.models].map((key) => h('span', { key, className: 'lezsp-chip' },
-                    choiceLabel(key).name,
-                    draft.type === 'auto' ? button('✕', () => choose(key, false, 'auto'), { className: 'lezsp-chip-x', disabled: !editable, aria: t('guideRemoveModel') }) : null))),
-                  ui.choiceOpen || !draft.models.size ? h(React.Fragment, null,
-                    h('p', { className: 'lezsp-muted' }, draft.type === 'fixed' ? t('fixedHint') : t('autoHint')),
-                    h('label', { className: 'lezsp-field', htmlFor: idFor('choiceSearch') },
-                      h('span', null, t('searchModels')),
-                      h('input', { id: idFor('choiceSearch'), type: 'search', value: ui.choiceQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, choiceQuery: event.target.value })) })),
+                  h('div', { className: 'lezsp-chip-group', style: { marginTop: '10px' } },
+                    draft.models.size ? [...draft.models].map((key) => {
+                      const info = choiceLabel(key);
+                      return h('span', { key, className: 'lezsp-chip' },
+                        h('span', { className: 'pv' }, info.provider), ' ', info.name,
+                        draft.type === 'auto' ? button('✕', () => choose(key, false, 'auto'), { className: 'lezsp-chip-x', disabled: !editable, aria: t('guideRemoveModel') }) : null);
+                    }) : h('span', { className: 'lezsp-muted' }, t('noModelsSelected'))),
+                  ui.choiceOpen || !draft.models.size ? h('div', { style: { marginTop: '10px' } },
+                    h('div', { className: 'lezsp-toolbar' },
+                      h('input', { id: idFor('choiceSearch'), type: 'search', value: ui.choiceQuery, disabled: !editable, 'aria-label': t('searchModels'), placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, choiceQuery: event.target.value })) }),
+                      button(t('selectVisible'), () => selectVisibleChoice(draft.type === 'fixed' ? fixedChoices : autoChoices, choiceLabel, staleKeys), { className: 'lezsp-small', disabled: !editable }),
+                      button(t('clearSelected'), clearChoice, { className: 'lezsp-small', disabled: !editable })),
                     choiceRows(draft.type) || h('p', { className: 'lezsp-muted' }, t(draft.type === 'fixed' ? 'noPoolFixed' : 'noPoolAuto'))) : null,
                   errors.fixed ? h('small', { className: 'lezsp-error' }, errors.fixed) : null,
                   errors.models ? h('small', { className: 'lezsp-error' }, errors.models) : null),
+                h('p', { className: 'lezsp-muted' }, t('notInPoolAutoHint')),
                 draft.type === 'auto' ? guideEditor() : null,
                 ui.error?.fields ? h('div', { className: 'lezsp-banner err', role: 'alert' }, t('formError')) : null,
                 h('div', { className: 'lezsp-form-actions' },
-                  h('button', { type: 'submit', className: 'lezsp-primary', disabled: !editable }, t('saveStrategy')),
                   button(saved ? t('discard') : t('cancelEdit'), () => {
                     if (!saved) { if (discardIfDirty()) closeDetail(); return; }
-                    if (discardIfDirty()) openStrategy(saved.id);
-                  }, { disabled: busy }))));
+                    if (discardIfDirty()) closeDetail();
+                  }, { disabled: busy }),
+                  h('button', { type: 'submit', className: 'lezsp-primary', disabled: !editable }, t('saveStrategy')))));
           }
 
           function modelsPage() {
@@ -1646,86 +1751,66 @@ window.__ModuleLoader__.load({
             ];
             const visibleCandidates = orderedCandidates.filter((candidate) => matchesModelQuery(candidate, ui.poolQuery));
             return h(React.Fragment, null,
-              h('div', { className: 'lezsp-between lezsp-row' },
-                h('div', null, h('h2', { id: idFor('modelsTitle'), tabIndex: -1, ref: titleRef('models') }, t('modelsTitle')), h('p', { className: 'lezsp-sub' }, t('modelsSub'))),
-                badge(staleCandidates.length
-                  ? fmt(t('modelCountUnavailable'), { count: snap.candidates.length, unavailable: staleCandidates.length })
-                  : fmt(t('modelCount'), { count: snap.candidates.length }))),
-              h('div', { className: 'lezsp-between lezsp-row' },
+              h('div', { className: 'lezsp-section-head' },
+                h('h2', { id: idFor('modelsTitle'), tabIndex: -1, ref: titleRef('models') }, t('modelsTitle'), h('small', null, t('modelsSub'))),
                 h('div', { className: 'lezsp-row' },
                   button(t('selectAll'), selectAllPool, { className: 'lezsp-small', disabled: !editable }),
-                  button(t('clearAll'), clearAllPool, { className: 'lezsp-small', disabled: !editable }),
-                  button(t('poolSync'), syncPool, { className: 'lezsp-small', disabled: busy || !snap }),
-                  h('span', { className: 'lezsp-count' }, fmt(t('selectedCount'), { count: draftCount }))),
-                h('span', { className: 'lezsp-count' }, fmt(t('savedCount'), { count: savedKeys.size }))),
-              h('p', { className: 'lezsp-muted' }, impact.length ? impact.join(' ') : t('poolImpact')),
-              h('div', { className: 'lezsp-row' },
-                h('label', { className: 'lezsp-field', htmlFor: idFor('poolSearch'), style: { flex: '1', minWidth: '180px' } },
-                  h('span', null, t('searchModels')),
-                  h('input', { id: idFor('poolSearch'), type: 'search', value: ui.poolQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, poolQuery: event.target.value })) })),
-                button(t('selectVisible'), selectVisiblePool, { className: 'lezsp-small', disabled: !editable })),
+                  button(t('clearSelected'), clearAllPool, { className: 'lezsp-small', disabled: !editable }),
+                  button(t('poolSync'), syncPool, { className: 'lezsp-small', disabled: busy || !snap }))),
+              h('div', { className: 'lezsp-toolbar' },
+                h('input', { id: idFor('poolSearch'), type: 'search', value: ui.poolQuery, disabled: !editable, 'aria-label': t('searchModels'), placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, poolQuery: event.target.value })) }),
+                button(t('selectVisible'), selectVisiblePool, { className: 'lezsp-small', disabled: !editable }),
+                h('span', { className: 'lezsp-muted' }, fmt(t('poolTotalStat'), { total: snap.candidates.length, inPool: draftCount }))),
+              impact.length ? h('p', { className: 'lezsp-muted' }, impact.join(' ')) : null,
               h('div', { className: 'lezsp-stack' }, visibleCandidates.length
-                ? [...groupByProvider(visibleCandidates)].map(([provider, providerRows]) => h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
-                  h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, providerRows.length)),
-                  h('div', { className: 'lezsp-stack' }, providerRows.map((candidate) => {
-                    const key = keyOf(candidate);
-                    const checked = keys.has(key);
-                    const entry = pool.entries.get(key) || byKey.get(key);
-                    const stale = !candidate.authorized || !candidate.available;
-                    const keptStale = stale && savedKeys.has(key);
-                    return h('div', { key, className: 'lezsp-pool-item' },
-                      h('div', { className: `lezsp-pool-row${stale ? ' stale' : ''}` },
-                        h('input', { type: 'checkbox', checked, disabled: !editable || (!checked && stale), 'aria-label': fmt(stale ? t('poolToggleLabelStale') : t('poolToggleLabel'), { name: candidate.name || candidate.model }), onChange: (event) => { event.stopPropagation(); togglePool(candidate); } }),
-                        h('label', { className: 'lezsp-choice-body' },
-                          h('span', { className: 'lezsp-choice-name' }, candidate.name || candidate.model, ' ', h('span', { className: 'lezsp-muted' }, candidate.provider)),
-                          h('span', { className: 'lezsp-muted' }, entry?.purpose || candidate.description || t('noPurpose')),
-                          h('span', { className: 'lezsp-muted' }, reasoningText(candidate, entry)),
-                          stale ? h('span', { className: keptStale ? 'lezsp-warn' : 'lezsp-error' }, keptStale ? t('unavailableKeptHint') : t('unavailableHint')) : null),
-                        h('select', { className: 'lezsp-effort', value: entry?.effort || '', disabled: !editable || !byKey.has(key), title: t('effortHint'), 'aria-label': `${t('effortLabel')}: ${candidate.name || candidate.model}`, onChange: (event) => savePoolEffort(candidate, entry, event.target.value) },
-                          h('option', { value: '' }, t('effortDefault')),
-                          ...((candidate.reasoning?.efforts || entry?.efforts || [])).map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name || effort.id))),
-                        button(t('abilityCard'), () => ui.detail?.kind === 'model' && ui.detail.key === key ? closeDetail() : openModel(key), { className: 'lezsp-small', disabled: busy || !byKey.has(key), aria: fmt(t('abilityCardLabel'), { name: candidate.name || candidate.model, provider: candidate.provider }) })),
-                      ui.detail?.kind === 'model' && ui.detail.key === key && ui.modelDraft ? modelDetail() : null);
-                  }))))
+                ? [...groupByProvider(visibleCandidates)].map(([provider, providerRows]) => {
+                  const inPoolCount = providerRows.filter((c) => keys.has(keyOf(c))).length;
+                  return h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
+                    h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, fmt(t('poolGroupStat'), { inPool: inPoolCount, total: providerRows.length }))),
+                    h('div', { className: 'lezsp-stack' }, providerRows.map((candidate) => {
+                      const key = keyOf(candidate);
+                      const checked = keys.has(key);
+                      const entry = pool.entries.get(key) || byKey.get(key);
+                      const stale = !candidate.authorized || !candidate.available;
+                      const keptStale = stale && savedKeys.has(key);
+                      const isConfigOpen = ui.detail?.kind === 'model' && ui.detail.key === key && Boolean(ui.modelDraft);
+                      return h('div', { key, className: 'lezsp-pool-item' },
+                        h('div', { className: `lezsp-pool-row${checked ? ' checked' : ''}${stale ? ' stale' : ''}` },
+                          h('input', { type: 'checkbox', checked, disabled: !editable || (!checked && stale), 'aria-label': fmt(stale ? t('poolToggleLabelStale') : t('poolToggleLabel'), { name: candidate.name || candidate.model }), onChange: (event) => { event.stopPropagation(); togglePool(candidate); } }),
+                          h('label', { className: 'lezsp-choice-body' },
+                            h('span', { className: 'lezsp-choice-name' }, candidate.name || candidate.model),
+                            entry?.purpose ? h('span', { className: 'lezsp-muted' }, entry.purpose) : null,
+                            stale ? h('span', { className: keptStale ? 'lezsp-warn' : 'lezsp-error' }, keptStale ? t('unavailableKeptHint') : t('unavailableHint')) : null),
+                          h('select', { className: 'lezsp-effort', value: entry?.effort || '', disabled: !editable || !byKey.has(key), title: t('effortHint'), 'aria-label': `${t('effortLabel')}: ${candidate.name || candidate.model}`, onChange: (event) => savePoolEffort(candidate, entry, event.target.value) },
+                            h('option', { value: '' }, t('effortDefaultNote')),
+                            ...((candidate.reasoning?.efforts || entry?.efforts || [])).map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name || effort.id))),
+                          button(isConfigOpen ? t('collapseBtn') : t('configureBtn'), () => isConfigOpen ? closeDetail() : openModel(key), { className: 'lezsp-small', disabled: busy || !byKey.has(key), aria: fmt(t('abilityCardLabel'), { name: candidate.name || candidate.model, provider: candidate.provider }) })),
+                        isConfigOpen ? modelDetail() : null);
+                    })));
+                })
                 : h('div', { className: 'lezsp-empty' }, t(snap.candidates.length ? 'noModelMatches' : 'emptyModels'))),
               dirty ? h('div', { className: 'lezsp-dirtybar', role: 'status' },
                 h('span', null, t('poolDirty')),
                 h('span', { style: { flex: '1' } }),
                 button(t('discardPool'), () => commit((state) => ({ ...state, poolDraft: draftsFrom(snap).poolDraft, error: null })), { className: 'lezsp-small', disabled: busy }),
                 button(t('savePool'), savePool, { className: 'lezsp-small lezsp-primary', disabled: !editable })) : null,
-              h('section', { className: 'lezsp-stack', 'aria-labelledby': idFor('limitsTitle') },
-                h('div', { className: 'lezsp-between lezsp-row' },
-                  h('h2', { id: idFor('limitsTitle'), tabIndex: -1 }, t('limitsTitle')),
-                  badge(t('sharedBadge'))),
-                h('p', { className: 'lezsp-sub' }, t('limitsSub')),
-                hostCapacityNotice(),
-                capacity.known ? h('p', { className: 'lezsp-muted' }, hostCeilingText) : null,
-                h('div', { className: 'lezsp-grid' },
-                  h('label', { className: 'lezsp-field', htmlFor: idFor('limDepth') },
+              h('div', { className: 'lezsp-section-head' },
+                h('h2', { id: idFor('limitsTitle'), tabIndex: -1 }, t('limitsTitle'), h('small', null, t('sharedBadge')))),
+              hostCapacityNotice(),
+              h('div', { className: 'lezsp-panel' },
+                h('div', { className: 'lezsp-row', style: { gap: '16px', alignItems: 'flex-end' } },
+                  h('label', { className: 'lezsp-field', htmlFor: idFor('limDepth'), style: { width: '140px', marginBottom: 0 } },
                     h('span', null, t('maxDepth')),
-                    h('input', { id: idFor('limDepth'), type: 'number', inputMode: 'numeric', min: 0, max: snap.host.maxDepth, step: 1, value: limitDraft.maxDepth, disabled: !editable, placeholder: '0–' + snap.host.maxDepth, 'aria-describedby': idFor('limDepthHint'), onChange: (event) => commit((state) => ({ ...state, limitDraft: { ...state.limitDraft, maxDepth: event.target.value } })) }),
-                    h('small', { className: 'lezsp-muted', id: idFor('limDepthHint') }, fmt(hostDefaultsShown ? t('depthHintHost') : t('depthHint'), { max: snap.host.maxDepth }))),
-                  h('label', { className: 'lezsp-field', htmlFor: idFor('limActive') },
+                    h('input', { id: idFor('limDepth'), type: 'number', inputMode: 'numeric', min: 0, max: snap.host.maxDepth, step: 1, value: limitDraft.maxDepth, disabled: !editable, placeholder: '0–' + snap.host.maxDepth, 'aria-describedby': idFor('limDepthHint'), onChange: (event) => commit((state) => ({ ...state, limitDraft: { ...state.limitDraft, maxDepth: event.target.value } })) })),
+                  h('label', { className: 'lezsp-field', htmlFor: idFor('limActive'), style: { width: '140px', marginBottom: 0 } },
                     h('span', null, t('maxActive')),
-                    h('input', { id: idFor('limActive'), type: 'number', inputMode: 'numeric', min: 1, max: limitMaxActive, step: 1, value: limitDraft.maxActive, disabled: !editable, placeholder: '1–' + limitMaxActive, 'aria-describedby': idFor('limActiveHint'), onChange: (event) => commit((state) => ({ ...state, limitDraft: { ...state.limitDraft, maxActive: event.target.value } })) }),
-                    h('small', { className: 'lezsp-muted', id: idFor('limActiveHint') }, capacity.known
-                      ? (hostDefaultsShown ? fmt(t('activeHintHost'), { max: limitMaxActive }) : fmt(t('activeHint'), { max: limitMaxActive, host: capacity.raw }))
-                      : t('activeHintUnknown')))),
-                h('p', { className: 'lezsp-muted' }, limits ? fmt(t('savedLimits'), { depth: limits.maxDepth, active: limits.maxActive }) : t('noSavedLimits')),
-                h('p', { className: 'lezsp-muted' }, active
-                  ? (limits
-                    ? (capacity.known
-                      ? fmt(t('effectiveActive'), { depth: effectiveDepth, active: Math.min(limits.maxActive, capacity.ceiling), local: limits.maxActive, host: capacity.raw })
-                      : fmt(t('effectiveUnknown'), { depth: limits.maxDepth, active: limits.maxActive }))
-                    : (capacity.known
-                      ? fmt(t('effectiveHostOnly'), { depth: snap.host.maxDepth, active: capacity.ceiling })
-                      : t('effectiveHostOnlyUnknown')))
-                  : t('effectiveClosed')),
+                    h('input', { id: idFor('limActive'), type: 'number', inputMode: 'numeric', min: 1, max: limitMaxActive, step: 1, value: limitDraft.maxActive, disabled: !editable, placeholder: '1–' + limitMaxActive, 'aria-describedby': idFor('limActiveHint'), onChange: (event) => commit((state) => ({ ...state, limitDraft: { ...state.limitDraft, maxActive: event.target.value } })) })),
+                  h('span', { className: 'lezsp-muted', id: idFor('limActiveHint') }, capacity.known ? hostCeilingText : t('activeHintUnknown')),
+                  h('span', { style: { flex: '1' } }),
+                  limitDirty ? button(t('discardLimits'), () => commit((state) => ({ ...state, limitDraft: draftsFrom(snap).limitDraft, error: null })), { className: 'lezsp-small', disabled: busy }) : null,
+                  button(t('saveLimits'), saveLimits, { className: 'lezsp-primary', disabled: !editable || !limitDirty || Boolean(limitBlocked), title: limitBlocked || undefined })),
                 limitDirty ? banner(t('limitsDirty'), 'warn') : null,
-                conflict ? banner(fmt(t('hostConflict'), { depth: limits.maxDepth, active: limits.maxActive, ceilingDepth: snap.host.maxDepth, ceilingActive: capacity.known ? capacity.raw : '—' }) + (active ? t('hostConflictActive') : ''), 'warn') : null,
-                h('div', { className: 'lezsp-form-actions' },
-                  button(t('saveLimits'), saveLimits, { className: 'lezsp-primary', disabled: !editable || !limitDirty || Boolean(limitBlocked), title: limitBlocked || undefined }),
-                  button(t('discardLimits'), () => commit((state) => ({ ...state, limitDraft: draftsFrom(snap).limitDraft, error: null })), { disabled: busy || !limitDirty }))));
+                conflict ? banner(fmt(t('hostConflict'), { depth: limits.maxDepth, active: limits.maxActive, ceilingDepth: snap.host.maxDepth, ceilingActive: capacity.known ? capacity.raw : '—' }) + (active ? t('hostConflictActive') : ''), 'warn') : null));
           }
 
           function modelDetail() {
@@ -1773,20 +1858,19 @@ window.__ModuleLoader__.load({
               return [record.strategyName, record.label, record.requestedModel, record.actualModel].some((value) => String(value || '').toLowerCase().includes(query));
             });
             return h(React.Fragment, null,
-              h('div', { className: 'lezsp-between lezsp-row' },
-                h('h2', { id: idFor('recordsTitle'), tabIndex: -1, ref: titleRef('records') }, t('recordsTitle')),
+              h('div', { className: 'lezsp-section-head', style: { marginTop: 0 } },
+                h('h2', { id: idFor('recordsTitle'), tabIndex: -1, ref: titleRef('records') }, t('recordsTitle'), h('small', null, t('recordsSub'))),
                 badge(fmt(t('recordsCount'), { shown: visibleRuns.length, total: snap.runs.length }))),
-              h('p', { className: 'lezsp-sub' }, t('recordsSub')),
-              h('div', { className: 'lezsp-filter-row', role: 'group', 'aria-label': t('recordsTitle') },
-                button(t('allFilter'), () => commit((state) => ({ ...state, recordProvider: '' })), { className: 'lezsp-small', pressed: !ui.recordProvider }),
-                providers.map((provider) => button(provider, () => commit((state) => ({ ...state, recordProvider: provider })), { className: 'lezsp-small', pressed: ui.recordProvider === provider }))),
-              h('label', { className: 'lezsp-field', htmlFor: idFor('recordSearch') },
-                h('span', null, t('searchModels')),
-                h('input', { id: idFor('recordSearch'), type: 'search', value: ui.recordQuery, placeholder: t('searchRecordsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, recordQuery: event.target.value })) })),
+              h('div', { className: 'lezsp-toolbar', role: 'group', 'aria-label': t('recordsTitle') },
+                h('div', { className: 'lezsp-filter-row', style: { margin: 0 } },
+                  button(t('allFilter'), () => commit((state) => ({ ...state, recordProvider: '' })), { className: 'lezsp-small', pressed: !ui.recordProvider }),
+                  providers.map((provider) => button(provider, () => commit((state) => ({ ...state, recordProvider: provider })), { className: 'lezsp-small', pressed: ui.recordProvider === provider }))),
+                h('input', { id: idFor('recordSearch'), type: 'search', value: ui.recordQuery, 'aria-label': t('searchModels'), placeholder: t('searchRecordsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, recordQuery: event.target.value })) })),
               h('p', { className: 'lezsp-muted' }, t('recordsHint')),
               visibleRuns.length ? h('div', { className: 'lezsp-stack' }, visibleRuns.map((record) => {
                 const name = record.strategyName || (record.strategyId === 'legacy' ? t('legacyStrategyName') : '') || t('legacyStrategyName');
                 const status = record.status === 'started' ? t('statusStarted') : record.status === 'disposed' ? t('statusDisposed') : t('statusAdmitted');
+                const statusKind = record.status === 'started' ? 'blue' : record.status === 'admitted' ? 'ok' : '';
                 const actual = record.evidence === 'assistant/message' && record.actualModel ? routeLabel({ provider: record.actualProvider, model: record.actualModel }) : t('noActual');
                 const evidence = record.evidence === 'assistant/message' ? 'assistant/message' : record.evidence === 'request/header (尚无响应)' ? t('evidenceRequested') : record.evidence === 'pending' ? t('evidencePending') : (record.evidence || t('noActual'));
                 return h('article', { key: record.id, className: 'lezsp-record' },
@@ -1795,7 +1879,8 @@ window.__ModuleLoader__.load({
                       h('span', { className: 'lezsp-time' }, formatTime(record.createdAt)),
                       h('strong', null, name),
                       h('span', { className: 'lezsp-muted' }, record.label || record.id),
-                      h('span', { className: 'lezsp-status-tag' }, status))),
+                      h('span', { className: 'lezsp-route' }, routeLabel({ provider: record.actualProvider || record.requestedProvider, model: record.actualModel || record.requestedModel }) || t('noRequest')),
+                      badge(status, statusKind))),
                     h('div', { className: 'lezsp-record-body' },
                       h('dl', null,
                         h('dt', null, t('requested')), h('dd', { className: 'lezsp-route' }, routeLabel({ provider: record.requestedProvider, model: record.requestedModel }) || t('noRequest')),
@@ -1814,23 +1899,21 @@ window.__ModuleLoader__.load({
           if (!sessionId) return h('div', { className: 'lezsp' }, h('style', null, CSS), t('noSession'));
           return h('div', { className: 'lezsp', 'aria-label': t('title'), 'aria-busy': busy },
             h('style', null, CSS),
-            h('header', null,
-              h('div', { className: 'lezsp-title-row' },
-                h('h1', null, t('title')),
-                packageVersion || packageRepoName ? h('div', { className: 'lezsp-head-meta' },
+            h('header', { className: 'lezsp-topbar' },
+              h('div', null,
+                h('div', { className: 'lezsp-title-row' },
+                  h('h1', null, t('title')),
                   packageVersion
                     ? h('span', { className: 'lezsp-badge lezsp-version-badge', 'aria-label': fmt(t('versionLabel'), { version: packageVersion }) }, packageVersion)
                     : null,
                   packageRepoName
                     ? h('a', { className: 'lezsp-repo-link', href: packageRepository, target: '_blank', rel: 'noopener noreferrer', 'aria-label': fmt(t('repoLinkLabel'), { repo: packageRepoName }) }, t('repoLink'))
-                    : null) : null),
-              h('div', { className: 'lezsp-between lezsp-row' },
-                h('p', { className: 'lezsp-sub' }, t('description')),
-                h('div', { className: 'lezsp-row' },
+                    : null,
                   h('span', { className: 'lezsp-session-chip', role: busy ? 'status' : undefined, 'aria-live': busy ? 'polite' : undefined }, busy ? t(ui.busy === 'read' ? 'loading' : 'saving') : t('scope')),
-                  busy ? button(t('cancel'), cancel, { className: 'lezsp-small' }) : null))),
-            h('nav', { className: 'lezsp-nav', 'aria-label': t('navLabel') },
-              ['session', 'strategies', 'records'].map((key) => h('button', { key, type: 'button', 'aria-current': page === key ? 'page' : undefined, onClick: () => goPage(key) }, t({ session: 'pageSession', strategies: 'pageStrategies', records: 'pageRecords' }[key])))),
+                  busy ? button(t('cancel'), cancel, { className: 'lezsp-small' }) : null),
+                h('p', { className: 'lezsp-sub' }, t('description'))),
+              h('nav', { className: 'lezsp-nav', 'aria-label': t('navLabel') },
+                ['session', 'strategies', 'records'].map((key) => h('button', { key, type: 'button', 'aria-current': page === key ? 'page' : undefined, onClick: () => goPage(key) }, t({ session: 'pageSession', strategies: 'pageStrategies', records: 'pageRecords' }[key]))))),
             ui.error ? h('div', { className: 'lezsp-banner err', role: 'alert' },
               h('p', null, `${t('error')}: ${ui.error.message}`),
               snap ? h('div', { className: 'lezsp-actions' }, button(t('retry'), read, { disabled: busy })) : null) : null,
