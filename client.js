@@ -108,6 +108,7 @@ window.__ModuleLoader__.load({
       manage: 'Manage', cardsHint: 'Click Edit to open the drawer; the switch enables or closes the strategy.',
       syncDefault: 'Sync now', defaultStaleHint: 'The default snapshot of “{name}” lags behind the saved strategy. Sync to regenerate the new-session default from the latest content.',
       allFilter: 'All', searchRecordsPlaceholder: 'Search task / strategy / model…', recordsCount: '{shown}/{total}',
+      choiceExpand: 'Expand list', choiceCollapse: 'Collapse list',
       recordsHint: 'Records keep the strategy name from creation, even if the strategy is later renamed or deleted.',
       noRecords: 'No execution insights yet.', task: 'Task', status: 'Status', statusAdmitted: 'Admitted', statusStarted: 'Started', statusDisposed: 'Released',
       requested: 'Requested model', actual: 'Actual model', evidence: 'Evidence', recordedAt: 'Recorded at', noRequest: 'Not recorded', noActual: 'Not confirmed',
@@ -222,6 +223,7 @@ window.__ModuleLoader__.load({
       manage: '管理', cardsHint: '点「编辑」打开抽屉；右侧开关控制启用。',
       syncDefault: '一键同步', defaultStaleHint: '「{name}」的默认快照落后于策略当前版本；同步后按最新内容生成新会话默认。',
       allFilter: '全部', searchRecordsPlaceholder: '搜索任务 / 策略 / 模型…', recordsCount: '{shown}/{total} 条',
+      choiceExpand: '展开候选列表', choiceCollapse: '收起候选列表',
       recordsHint: '记录保留创建时的策略名，之后重命名或删除策略不会改写历史。',
       noRecords: '暂无执行洞察。', task: '任务', status: '状态', statusAdmitted: '已准入', statusStarted: '执行中', statusDisposed: '已释放',
       requested: '请求模型', actual: '实际模型', evidence: '证据', recordedAt: '记录时间', noRequest: '未记录', noActual: '待确认',
@@ -302,7 +304,9 @@ window.__ModuleLoader__.load({
       .lezsp .lezsp-model-choice.checked{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}
       .lezsp .lezsp-model-choice.stale{border-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
       .lezsp .lezsp-choice-body{display:grid;gap:1px;min-width:0}.lezsp .lezsp-choice-name{font-size:12px;font-weight:700}
-      .lezsp .lezsp-pool-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-1);min-width:0}
+      .lezsp .lezsp-pool-item{display:grid;gap:6px;min-width:0}
+      .lezsp .lezsp-pool-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px;align-items:start;padding:8px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-1);min-width:0}
+      .lezsp select.lezsp-effort{width:auto;min-width:104px;max-width:150px;padding:4px 6px;font-size:12px}
       .lezsp .lezsp-pool-row.stale{border-color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
       .lezsp .lezsp-provider-group{display:grid;gap:8px;margin:10px 0}
       .lezsp .lezsp-provider-title{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:12px}
@@ -598,7 +602,7 @@ window.__ModuleLoader__.load({
 
         function PolicySession({ sessionId, t, visible, tabSignal }) {
           const prefix = useId();
-          const [ui, setUi] = useState({ snap: null, page: 'strategies', detail: null, poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, poolQuery: '', choiceQuery: '', guidePicker: -1, guideQuery: '', recordQuery: '', recordProvider: '', busy: null, error: null, notice: null, noticeKind: '', conflict: false, mustRefresh: false, lastActiveId: null, lastDefault: null });
+          const [ui, setUi] = useState({ snap: null, page: 'strategies', detail: null, poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, poolQuery: '', choiceQuery: '', guidePicker: -1, guideQuery: '', recordQuery: '', recordProvider: '', choiceOpen: false, busy: null, error: null, notice: null, noticeKind: '', conflict: false, mustRefresh: false, lastActiveId: null, lastDefault: null });
           const uiRef = useRef(ui);
           const operation = useRef(null);
           const serial = useRef(0);
@@ -836,7 +840,7 @@ window.__ModuleLoader__.load({
             const snap = uiRef.current.snap;
             const strategy = id ? snap.management.strategies.find((row) => row.id === id) : null;
             if (id && !strategy) return;
-            commit((state) => ({ ...state, detail: { kind: 'strategy', id: strategy?.id || null }, strategyDraft: strategyDraftOf(strategy), guidePicker: -1, guideQuery: '', error: null, notice: null, noticeKind: '' }));
+            commit((state) => ({ ...state, detail: { kind: 'strategy', id: strategy?.id || null }, strategyDraft: strategyDraftOf(strategy), choiceOpen: !strategy, guidePicker: -1, guideQuery: '', error: null, notice: null, noticeKind: '' }));
           }
           function closeDetail() {
             commit((state) => ({ ...state, detail: null, strategyDraft: null, modelDraft: null, guidePicker: -1, guideQuery: '', error: null, notice: null, noticeKind: '' }));
@@ -989,6 +993,20 @@ window.__ModuleLoader__.load({
             const candidate = snap.candidates.find((row) => keyOf(row) === key);
             const name = entry.name || candidate?.name || entry.model;
             commit((state) => ({ ...state, detail: { kind: 'model', key }, modelDraft: { provider: entry.provider, model: entry.model, name, purpose: entry.purpose || '', note: entry.note || '', effort: entry.effort || '', efforts: candidate?.reasoning?.efforts || [], dirty: false }, error: null, notice: null, noticeKind: '' }));
+          }
+          /**
+           * 行内直接保存某个池模型的思考强度；用途与说明沿用现有值，不覆盖。
+           *
+           * @param {object} candidate 宿主候选行，提供 provider/model 与描述兜底。
+           * @param {object|undefined} entry 池中已有条目，取用途和说明。
+           * @param {string} effort 目标思考强度；空串表示沿用模型默认。
+           */
+          function savePoolEffort(candidate, entry, effort) {
+            mutation('pool.note', {
+              provider: candidate.provider, model: candidate.model,
+              purpose: entry?.purpose || (candidate.description || '').slice(0, 500),
+              note: entry?.note || '', effort,
+            }, { pool: true, notice: 'noteSaved' });
           }
           function saveModelNote() {
             const draft = uiRef.current.modelDraft;
@@ -1494,19 +1512,27 @@ window.__ModuleLoader__.load({
               !capacity.known ? hostCapacityNotice() : saveBlocked ? h('p', { className: 'lezsp-note warn', role: 'status' }, saveBlocked) : null,
               draft.converting ? h('p', { className: 'lezsp-note warn' }, t('convertedHint')) : null,
               h('form', { onSubmit: (event) => { event.preventDefault(); saveStrategy(); } },
-                h('label', { className: 'lezsp-field', htmlFor: idFor('sName') },
-                  h('span', null, t('nameLabel')),
-                  h('input', { id: idFor('sName'), type: 'text', maxLength: 60, autoComplete: 'off', value: draft.name, disabled: !editable, placeholder: t('namePlaceholder'), 'aria-invalid': errors.name ? 'true' : undefined, 'aria-describedby': errors.name ? idFor('sName-error') : undefined, onChange: (event) => editStrategyField('name', event.target.value) }),
-                  errors.name ? h('small', { className: 'lezsp-error', id: idFor('sName-error') }, errors.name) : null),
-                h('div', { className: 'lezsp-field' }, h('span', null, t('typeLabel')), typeChoices),
+                h('div', { className: 'lezsp-grid' },
+                  h('label', { className: 'lezsp-field', htmlFor: idFor('sName') },
+                    h('span', null, t('nameLabel')),
+                    h('input', { id: idFor('sName'), type: 'text', maxLength: 60, autoComplete: 'off', value: draft.name, disabled: !editable, placeholder: t('namePlaceholder'), 'aria-invalid': errors.name ? 'true' : undefined, 'aria-describedby': errors.name ? idFor('sName-error') : undefined, onChange: (event) => editStrategyField('name', event.target.value) }),
+                    errors.name ? h('small', { className: 'lezsp-error', id: idFor('sName-error') }, errors.name) : null),
+                  h('div', { className: 'lezsp-field' }, h('span', null, t('typeLabel')), typeChoices)),
                 h('p', { className: 'lezsp-muted' }, draft.type === 'fixed' ? t('typeHintFixed') : t('typeHintAuto')),
                 h('fieldset', { id: idFor('sChoice'), tabIndex: -1, 'aria-label': t(draft.type === 'fixed' ? 'fixedPanel' : 'autoPanel'), 'aria-invalid': (errors.fixed || errors.models) ? 'true' : undefined },
                   h('legend', null, draft.type === 'fixed' ? t('fixedPanel') : t('autoPanel')),
-                  h('p', { className: 'lezsp-muted' }, draft.type === 'fixed' ? t('fixedHint') : t('autoHint')),
-                  h('label', { className: 'lezsp-field', htmlFor: idFor('choiceSearch') },
-                    h('span', null, t('searchModels')),
-                    h('input', { id: idFor('choiceSearch'), type: 'search', value: ui.choiceQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, choiceQuery: event.target.value })) })),
-                  choiceRows(draft.type) || h('p', { className: 'lezsp-muted' }, t(draft.type === 'fixed' ? 'noPoolFixed' : 'noPoolAuto')),
+                  h('div', { className: 'lezsp-between lezsp-row' },
+                    h('span', { className: 'lezsp-muted' }, fmt(t('selectedCount'), { count: draft.models.size })),
+                    button(ui.choiceOpen ? t('choiceCollapse') : t('choiceExpand'), () => commit((state) => ({ ...state, choiceOpen: !state.choiceOpen })), { className: 'lezsp-small' })),
+                  h('div', { className: 'lezsp-chip-group' }, [...draft.models].map((key) => h('span', { key, className: 'lezsp-chip' },
+                    choiceLabel(key).name,
+                    draft.type === 'auto' ? button('✕', () => choose(key, false, 'auto'), { className: 'lezsp-chip-x', disabled: !editable, aria: t('guideRemoveModel') }) : null))),
+                  ui.choiceOpen || !draft.models.size ? h(React.Fragment, null,
+                    h('p', { className: 'lezsp-muted' }, draft.type === 'fixed' ? t('fixedHint') : t('autoHint')),
+                    h('label', { className: 'lezsp-field', htmlFor: idFor('choiceSearch') },
+                      h('span', null, t('searchModels')),
+                      h('input', { id: idFor('choiceSearch'), type: 'search', value: ui.choiceQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, choiceQuery: event.target.value })) })),
+                    choiceRows(draft.type) || h('p', { className: 'lezsp-muted' }, t(draft.type === 'fixed' ? 'noPoolFixed' : 'noPoolAuto'))) : null,
                   errors.fixed ? h('small', { className: 'lezsp-error' }, errors.fixed) : null,
                   errors.models ? h('small', { className: 'lezsp-error' }, errors.models) : null),
                 draft.type === 'auto' ? guideEditor() : null,
@@ -1526,7 +1552,6 @@ window.__ModuleLoader__.load({
           }
 
           function modelsPage() {
-            if (ui.detail?.kind === 'model' && ui.modelDraft) return modelDetail();
             const pool = ui.poolDraft;
             if (!pool) return null;
             const keys = pool.keys;
@@ -1595,15 +1620,19 @@ window.__ModuleLoader__.load({
                     const entry = pool.entries.get(key) || byKey.get(key);
                     const stale = !candidate.authorized || !candidate.available;
                     const keptStale = stale && savedKeys.has(key);
-                    return h('div', { key, className: `lezsp-pool-row${stale ? ' stale' : ''}` },
-                      h('input', { type: 'checkbox', checked, disabled: !editable || (!checked && stale), 'aria-label': fmt(stale ? t('poolToggleLabelStale') : t('poolToggleLabel'), { name: candidate.name || candidate.model }), onChange: (event) => { event.stopPropagation(); togglePool(candidate); } }),
-                      h('label', { className: 'lezsp-choice-body' },
-                        h('span', { className: 'lezsp-choice-name' }, candidate.name || candidate.model, ' ', h('span', { className: 'lezsp-muted' }, candidate.provider)),
-                        h('span', { className: 'lezsp-muted' }, entry?.purpose || candidate.description || t('noPurpose')),
-                        h('span', { className: 'lezsp-muted' }, reasoningText(candidate, entry)),
-                        entry?.effort ? h('span', { className: 'lezsp-muted' }, fmt(t('effortInline'), { effort: entry.effort })) : null,
-                        stale ? h('span', { className: keptStale ? 'lezsp-warn' : 'lezsp-error' }, keptStale ? t('unavailableKeptHint') : t('unavailableHint')) : null),
-                      button(t('abilityCard'), () => openModel(key), { className: 'lezsp-small', disabled: busy || !byKey.has(key), aria: fmt(t('abilityCardLabel'), { name: candidate.name || candidate.model, provider: candidate.provider }) }));
+                    return h('div', { key, className: 'lezsp-pool-item' },
+                      h('div', { className: `lezsp-pool-row${stale ? ' stale' : ''}` },
+                        h('input', { type: 'checkbox', checked, disabled: !editable || (!checked && stale), 'aria-label': fmt(stale ? t('poolToggleLabelStale') : t('poolToggleLabel'), { name: candidate.name || candidate.model }), onChange: (event) => { event.stopPropagation(); togglePool(candidate); } }),
+                        h('label', { className: 'lezsp-choice-body' },
+                          h('span', { className: 'lezsp-choice-name' }, candidate.name || candidate.model, ' ', h('span', { className: 'lezsp-muted' }, candidate.provider)),
+                          h('span', { className: 'lezsp-muted' }, entry?.purpose || candidate.description || t('noPurpose')),
+                          h('span', { className: 'lezsp-muted' }, reasoningText(candidate, entry)),
+                          stale ? h('span', { className: keptStale ? 'lezsp-warn' : 'lezsp-error' }, keptStale ? t('unavailableKeptHint') : t('unavailableHint')) : null),
+                        h('select', { className: 'lezsp-effort', value: entry?.effort || '', disabled: !editable || !byKey.has(key), title: t('effortHint'), 'aria-label': `${t('effortLabel')}: ${candidate.name || candidate.model}`, onChange: (event) => savePoolEffort(candidate, entry, event.target.value) },
+                          h('option', { value: '' }, t('effortDefault')),
+                          ...((candidate.reasoning?.efforts || entry?.efforts || [])).map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name || effort.id))),
+                        button(t('abilityCard'), () => ui.detail?.kind === 'model' && ui.detail.key === key ? closeDetail() : openModel(key), { className: 'lezsp-small', disabled: busy || !byKey.has(key), aria: fmt(t('abilityCardLabel'), { name: candidate.name || candidate.model, provider: candidate.provider }) })),
+                      ui.detail?.kind === 'model' && ui.detail.key === key && ui.modelDraft ? modelDetail() : null);
                   }))))
                 : h('div', { className: 'lezsp-empty' }, t(snap.candidates.length ? 'noModelMatches' : 'emptyModels'))),
               h('div', { className: 'lezsp-form-actions' },
@@ -1646,10 +1675,11 @@ window.__ModuleLoader__.load({
 
           function modelDetail() {
             const draft = ui.modelDraft;
-            return h('section', { 'aria-label': t('abilityTitle') },
-              button(t('backModels'), () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-link' }),
-              h('h2', { className: 'lezsp-detail-title', tabIndex: -1, id: idFor('modelDetailTitle'), ref: titleRef('modelDetail') },
-                t('abilityTitle'), h('span', { className: 'lezsp-detail-meta' }, `${draft.name || draft.model} · ${draft.provider}`)),
+            return h('div', { className: 'lezsp-guide-picker', 'aria-label': t('abilityTitle') },
+              h('div', { className: 'lezsp-between lezsp-row' },
+                h('h3', { tabIndex: -1, id: idFor('modelDetailTitle'), ref: titleRef('modelDetail') },
+                  t('abilityTitle'), h('span', { className: 'lezsp-detail-meta' }, `${draft.name || draft.model} · ${draft.provider}`)),
+                button('✕', () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-small', aria: t('cancelEdit') })),
               h('label', { className: 'lezsp-field', htmlFor: idFor('mPurpose') },
                 h('span', null, t('purposeLabel')),
                 h('input', { id: idFor('mPurpose'), type: 'text', maxLength: 200, value: draft.purpose, disabled: !editable, onChange: (event) => commit((state) => ({ ...state, modelDraft: { ...state.modelDraft, purpose: event.target.value, dirty: true } })) })),
