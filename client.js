@@ -1211,12 +1211,18 @@ window.__ModuleLoader__.load({
             const entries = order.filter((key) => pool.keys.has(key)).map((key) => {
               const draftEntry = pool.entries.get(key);
               const savedEntry = savedEntryByKey.get(key);
-              if (draftEntry && savedEntry) {
-                return { ...savedEntry, ...draftEntry, effort: draftEntry.effort ?? savedEntry.effort ?? '' };
-              }
-              if (draftEntry) return { purpose: '', note: '', effort: '', ...draftEntry };
+              const merged = draftEntry && savedEntry
+                ? { ...savedEntry, ...draftEntry, effort: draftEntry.effort ?? savedEntry.effort ?? '' }
+                : draftEntry || null;
               const [provider, model] = JSON.parse(key);
-              return { provider, model, purpose: '', note: '', effort: '' };
+              // 后端 readPoolEntries 只接受 provider/model/purpose/note/effort，
+              // 快照里的 name、authorized、available、reasoning 等字段必须剥离。
+              return {
+                provider, model,
+                purpose: merged?.purpose || '',
+                note: merged?.note || '',
+                effort: merged?.effort || '',
+              };
             });
             mutation('pool.save', { pool: entries }, { pool: true, notice: 'poolSaved' });
           }
