@@ -16,7 +16,7 @@ window.__ModuleLoader__.load({
       noModelsSelected: 'No models selected', badResponse: 'The Host returned an invalid policy snapshot.', missingCommand: 'The Host did not recognize /subagent-policy.', staleResponse: 'A response for a different session was rejected.',
       conflict: 'Version conflict', conflictHelp: 'The server has a newer revision. Your draft is preserved. Load the server version to continue.', loadServer: 'Load server version', mustRefresh: 'Refresh is required before another write.',
       readOnly: 'This session cannot edit the policy. The inherited snapshot is read-only.', noSession: 'Select a session to view its policy.', noSnapshot: 'No policy snapshot loaded.',
-      navLabel: 'Policy management pages', pageSession: 'This session', pageStrategies: 'Strategy library', pageModels: 'Model pool', pageRecords: 'Execution insights',
+      navLabel: 'Policy management pages', pageSession: 'This session', pageStrategies: 'Global settings', pageModels: 'Model pool', pageRecords: 'Execution insights',
       sessionPickHint: 'Pick which strategy this session uses. To create, edit, delete strategies or set the global default, go to the strategy library.',
       sessionTitle: 'Strategy switch', policyLabelOn: 'Strategy switch: enabled', policyLabelOff: 'Strategy switch: not enabled',
       closedSummary: 'Not enabled; the Host default applies (usually follows the parent model).',
@@ -109,7 +109,7 @@ window.__ModuleLoader__.load({
       manage: 'Manage', cardsHint: 'Click Edit to open the drawer; the switch enables or closes the strategy.',
       syncDefault: 'Sync now', defaultStaleHint: 'The default snapshot of “{name}” lags behind the saved strategy. Sync to regenerate the new-session default from the latest content.',
       allFilter: 'All', searchRecordsPlaceholder: 'Search task / strategy / model…', recordsCount: '{shown}/{total}',
-      choiceExpand: 'Expand list', choiceCollapse: 'Collapse list',
+      choiceExpand: 'Expand list', choiceCollapse: 'Collapse list', selectVisible: 'Select filtered',
       recordsHint: 'Records keep the strategy name from creation, even if the strategy is later renamed or deleted.',
       noRecords: 'No execution insights yet.', task: 'Task', status: 'Status', statusAdmitted: 'Admitted', statusStarted: 'Started', statusDisposed: 'Released',
       requested: 'Requested model', actual: 'Actual model', evidence: 'Evidence', recordedAt: 'Recorded at', noRequest: 'Not recorded', noActual: 'Not confirmed',
@@ -132,8 +132,9 @@ window.__ModuleLoader__.load({
       noModelsSelected: '未选择模型', badResponse: '宿主返回的策略快照不符合约定。', missingCommand: '宿主未识别 /subagent-policy 命令。', staleResponse: '已拒绝属于其他会话的响应。',
       conflict: '版本冲突', conflictHelp: '服务端已有新版本，本地草稿已保留。载入服务端版本后可继续。', loadServer: '载入服务端版本', mustRefresh: '再次写入前需要先刷新确认。',
       readOnly: '当前会话无权编辑策略，继承的快照为只读。', noSession: '请选择会话后查看策略。', noSnapshot: '尚未读取策略快照。',
-      navLabel: '策略管理页面', pageSession: '当前会话', pageStrategies: '策略库', pageModels: '模型池', pageRecords: '执行洞察',
-      sessionPickHint: '在这里选择本会话启用哪份策略；新增、编辑、删除策略和全局默认在「策略库」页。',
+      navLabel: '策略管理页面', pageSession: '当前会话', pageStrategies: '全局设置', pageModels: '模型池', pageRecords: '执行洞察',
+      sessionPickHint: '在这里选择本会话启用哪份策略；新增、编辑、删除策略和全局默认在「全局设置」页。',
+      selectVisible: '选中当前筛选',
       sessionTitle: '策略开关', policyLabelOn: '策略开关：已启用', policyLabelOff: '策略开关：未启用',
       closedSummary: '未启用；按宿主默认（通常跟随父模型）。',
       activeLine: '已启用「{name}」· {type} · {target}', targetFixed: '{name}', targetAuto: '{count} 个候选',
@@ -349,6 +350,7 @@ window.__ModuleLoader__.load({
       .lezsp .lezsp-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
       .lezsp .lezsp-filter-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
       .lezsp .lezsp-filter-row button[aria-pressed="true"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary);font-weight:700}
+      .lezsp .lezsp-dirtybar{position:sticky;bottom:10px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border:1px solid var(--dsw-alias-brand-primary);border-radius:10px;background:var(--dsw-alias-bg-layer-3);box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px}
       @media(max-width:420px){.lezsp{padding:10px}.lezsp-nav button{font-size:11px}.lezsp dl{grid-template-columns:1fr;gap:1px}.lezsp dd{margin-bottom:6px}.lezsp-pool-row{grid-template-columns:auto minmax(0,1fr)}}
     `;
 
@@ -1049,6 +1051,23 @@ window.__ModuleLoader__.load({
               return { ...state, poolDraft: { keys, entries } };
             });
           }
+          /** 把当前搜索筛选出的可用候选全部加入池草稿（上限 200），长列表免逐个勾选。 */
+          function selectVisiblePool() {
+            commit((state) => {
+              if (!state.poolDraft) return state;
+              const keys = new Set(state.poolDraft.keys);
+              const entries = new Map(state.poolDraft.entries);
+              for (const candidate of state.snap.candidates) {
+                if (!candidate.authorized || !candidate.available) continue;
+                if (!matchesModelQuery(candidate, state.poolQuery)) continue;
+                if (keys.size >= 200) break;
+                const key = keyOf(candidate);
+                keys.add(key);
+                if (!entries.has(key)) entries.set(key, { provider: candidate.provider, model: candidate.model, purpose: (candidate.description || '').slice(0, 500), note: '' });
+              }
+              return { ...state, poolDraft: { keys, entries } };
+            });
+          }
           function clearAllPool() {
             commit((state) => state.poolDraft ? { ...state, poolDraft: { keys: new Set(), entries: new Map(state.poolDraft.entries) } } : state);
           }
@@ -1392,7 +1411,8 @@ window.__ModuleLoader__.load({
                 button(t('newStrategy'), () => openStrategy(null), { className: 'lezsp-small lezsp-primary', disabled: !editable })),
               snap.management.strategies.length
                 ? h('div', { className: 'lezsp-cards' }, snap.management.strategies.map(strategyCard))
-                : h('div', { className: 'lezsp-empty' }, t('emptyStrategies')));
+                : h('div', { className: 'lezsp-empty' }, t('emptyStrategies')),
+              modelsPage());
           }
 
           function strategyDetail() {
@@ -1635,10 +1655,11 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'lezsp-count' }, fmt(t('selectedCount'), { count: draftCount }))),
                 h('span', { className: 'lezsp-count' }, fmt(t('savedCount'), { count: savedKeys.size }))),
               h('p', { className: 'lezsp-muted' }, impact.length ? impact.join(' ') : t('poolImpact')),
-              dirty ? banner(t('poolDirty'), 'warn') : null,
-              h('label', { className: 'lezsp-field', htmlFor: idFor('poolSearch') },
-                h('span', null, t('searchModels')),
-                h('input', { id: idFor('poolSearch'), type: 'search', value: ui.poolQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, poolQuery: event.target.value })) })),
+              h('div', { className: 'lezsp-row' },
+                h('label', { className: 'lezsp-field', htmlFor: idFor('poolSearch'), style: { flex: '1', minWidth: '180px' } },
+                  h('span', null, t('searchModels')),
+                  h('input', { id: idFor('poolSearch'), type: 'search', value: ui.poolQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, poolQuery: event.target.value })) })),
+                button(t('selectVisible'), selectVisiblePool, { className: 'lezsp-small', disabled: !editable })),
               h('div', { className: 'lezsp-stack' }, visibleCandidates.length
                 ? [...groupByProvider(visibleCandidates)].map(([provider, providerRows]) => h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
                   h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, providerRows.length)),
@@ -1663,9 +1684,11 @@ window.__ModuleLoader__.load({
                       ui.detail?.kind === 'model' && ui.detail.key === key && ui.modelDraft ? modelDetail() : null);
                   }))))
                 : h('div', { className: 'lezsp-empty' }, t(snap.candidates.length ? 'noModelMatches' : 'emptyModels'))),
-              h('div', { className: 'lezsp-form-actions' },
-                button(t('savePool'), savePool, { className: 'lezsp-primary', disabled: !editable || !dirty }),
-                button(t('discardPool'), () => commit((state) => ({ ...state, poolDraft: draftsFrom(snap).poolDraft, error: null })), { disabled: busy || !dirty })),
+              dirty ? h('div', { className: 'lezsp-dirtybar', role: 'status' },
+                h('span', null, t('poolDirty')),
+                h('span', { style: { flex: '1' } }),
+                button(t('discardPool'), () => commit((state) => ({ ...state, poolDraft: draftsFrom(snap).poolDraft, error: null })), { className: 'lezsp-small', disabled: busy }),
+                button(t('savePool'), savePool, { className: 'lezsp-small lezsp-primary', disabled: !editable })) : null,
               h('section', { className: 'lezsp-stack', 'aria-labelledby': idFor('limitsTitle') },
                 h('div', { className: 'lezsp-between lezsp-row' },
                   h('h2', { id: idFor('limitsTitle'), tabIndex: -1 }, t('limitsTitle')),
@@ -1803,7 +1826,7 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'lezsp-session-chip', role: busy ? 'status' : undefined, 'aria-live': busy ? 'polite' : undefined }, busy ? t(ui.busy === 'read' ? 'loading' : 'saving') : t('scope')),
                   busy ? button(t('cancel'), cancel, { className: 'lezsp-small' }) : null))),
             h('nav', { className: 'lezsp-nav', 'aria-label': t('navLabel') },
-              ['session', 'strategies', 'models', 'records'].map((key) => h('button', { key, type: 'button', 'aria-current': page === key ? 'page' : undefined, onClick: () => goPage(key) }, t({ session: 'pageSession', strategies: 'pageStrategies', models: 'pageModels', records: 'pageRecords' }[key])))),
+              ['session', 'strategies', 'records'].map((key) => h('button', { key, type: 'button', 'aria-current': page === key ? 'page' : undefined, onClick: () => goPage(key) }, t({ session: 'pageSession', strategies: 'pageStrategies', records: 'pageRecords' }[key])))),
             ui.error ? h('div', { className: 'lezsp-banner err', role: 'alert' },
               h('p', null, `${t('error')}: ${ui.error.message}`),
               snap ? h('div', { className: 'lezsp-actions' }, button(t('retry'), read, { disabled: busy })) : null) : null,
@@ -1816,7 +1839,7 @@ window.__ModuleLoader__.load({
               h('p', null, t('noSnapshot')),
               button(t('retry'), read, { disabled: busy })) : h(React.Fragment, null,
               !snap.canEdit ? banner(t('readOnly')) : null,
-              page === 'session' ? sessionPage() : page === 'strategies' ? strategiesPage() : page === 'models' ? modelsPage() : recordsPage()));
+              page === 'session' ? sessionPage() : page === 'strategies' ? strategiesPage() : recordsPage()));
         }
 
         function PolicyTab(props) {
