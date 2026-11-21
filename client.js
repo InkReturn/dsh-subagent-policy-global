@@ -36,6 +36,11 @@ window.__ModuleLoader__.load({
       fixedPanel: 'Fixed model', fixedHint: 'Choose one model from the saved session pool.', autoPanel: 'Candidate subset', autoHint: 'Pick candidates from the session pool; the agent decides only inside this subset.',
       noPoolFixed: 'The session pool is empty. Add and save models on the model pool page first.', noPoolAuto: 'The session pool is empty. Add and save models on the model pool page first.',
       textLabel: 'Selection note', textHint: 'The note only informs selection; it grants no new authorization.', textCount: '{count}/{max}',
+      guideStruct: 'Structured rules', guideFree: 'Free text', guideFreeLabel: 'Note text',
+      guideRulesHint: 'Rules match top-down; the first hit wins. Models inside a rule are tried in the listed order.',
+      guideScenePlaceholder: 'Task scene, e.g. development / polishing', guidePickModel: '+ Pick models', guidePickerHint: 'Multi-select from the candidate subset; check order = priority.',
+      guideAddRule: '+ Add rule', guideFallback: 'Fallback (no rule matches)', guidePreview: 'Injection preview', guidePreviewHint: 'This exact text is stored and injected as the selection note.',
+      guideMoveUp: 'Move rule up', guideMoveDown: 'Move rule down', guideRemoveRule: 'Delete rule', guideRemoveModel: 'Remove model', guideOrder: 'Priority {order}',
       saveStrategy: 'Save strategy', discard: 'Discard changes', cancelEdit: 'Cancel',
       formError: 'Correct the marked fields before saving.', errNameEmpty: 'Enter a strategy name.', errNameLong: 'The strategy name is too long.', errNameDup: 'Another strategy already uses this name.',
       errFixed: 'Select one fixed model.', errModels: 'Select at least one candidate.', errText: 'The selection note is too long.',
@@ -142,6 +147,11 @@ window.__ModuleLoader__.load({
       fixedPanel: '固定模型', fixedHint: '从已保存的会话池中单选一个模型。', autoPanel: '候选子集', autoHint: '从会话池勾选候选；Agent 自选只在这个子集内决策。',
       noPoolFixed: '会话池为空，请先在「模型池」勾选并保存。', noPoolAuto: '会话池为空，请先在「模型池」勾选并保存。',
       textLabel: '选择说明', textHint: '说明只供决策参考，不扩大授权。', textCount: '{count}/{max}',
+      guideStruct: '结构化规则', guideFree: '自由文本', guideFreeLabel: '说明文本',
+      guideRulesHint: '规则从上到下匹配，命中即停；同一规则内按列出顺序优先。',
+      guideScenePlaceholder: '任务场景，例如：开发 / 润色', guidePickModel: '＋ 选模型', guidePickerHint: '在候选子集内多选；勾选顺序 = 优先级顺序。',
+      guideAddRule: '＋ 添加规则', guideFallback: '兜底（无规则命中时）', guidePreview: '注入预览', guidePreviewHint: '保存并注入给子会话的就是这段文本。',
+      guideMoveUp: '上移规则', guideMoveDown: '下移规则', guideRemoveRule: '删除规则', guideRemoveModel: '移除模型', guideOrder: '优先 {order}',
       saveStrategy: '保存策略', discard: '放弃修改', cancelEdit: '取消',
       formError: '请修正标记的字段后再保存。', errNameEmpty: '请填写策略名称。', errNameLong: '策略名称过长。', errNameDup: '已有同名策略，请换一个名称。',
       errFixed: '请选择一个固定模型。', errModels: '至少勾选一个候选模型。', errText: '选择说明过长。',
@@ -308,6 +318,12 @@ window.__ModuleLoader__.load({
       .lezsp .lezsp-repo-link{color:var(--dsw-alias-brand-primary);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
       .lezsp .lezsp-repo-link:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
       .lezsp-header{display:inline-flex;gap:4px;align-items:center;min-width:0}.lezsp-header button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:4px;border:0;background:transparent;color:var(--dsw-alias-label-secondary)}
+      .lezsp .lezsp-status-divider{margin-top:8px;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l2)}
+      .lezsp .lezsp-guide-rule{display:grid;gap:8px;margin:0 0 10px;padding:9px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
+      .lezsp .lezsp-guide-chips{margin-top:2px}
+      .lezsp .lezsp-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:var(--dsw-alias-bg-module-platform);font-family:ui-monospace,monospace;font-size:11px;color:var(--dsw-alias-label-secondary)}
+      .lezsp .lezsp-chip-x{padding:0 2px;border:0;background:transparent;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:1}
+      .lezsp .lezsp-guide-picker{margin:4px 0 2px;padding:9px 10px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-module-platform)}
       @media(max-width:420px){.lezsp{padding:10px}.lezsp-nav button{font-size:11px}.lezsp dl{grid-template-columns:1fr;gap:1px}.lezsp dd{margin-bottom:6px}.lezsp-pool-row{grid-template-columns:auto minmax(0,1fr)}}
     `;
 
@@ -377,7 +393,76 @@ window.__ModuleLoader__.load({
       const allModels = new Set((strategy && strategy.models || []).map(keyOf));
       const fixedRoute = strategy && strategy.type === 'fixed' ? keyOf({ provider: strategy.fixedProvider, model: strategy.fixedModel }) : (allModels.size ? [...allModels][0] : '');
       const models = type === 'fixed' ? new Set(fixedRoute ? [fixedRoute] : []) : allModels;
-      return { id: strategy && strategy.id ? strategy.id : null, name: strategy && strategy.name ? strategy.name : '', type, models, fixedRoute, strategyText: strategy && strategy.strategyText ? strategy.strategyText : '', dirty: false, legacy: Boolean(strategy && strategy.type === 'inherit'), converting: Boolean(strategy && strategy.type === 'inherit') };
+      const strategyText = strategy && strategy.strategyText ? strategy.strategyText : '';
+      const parsedGuide = parseGuideText(strategyText);
+      return { id: strategy && strategy.id ? strategy.id : null, name: strategy && strategy.name ? strategy.name : '', type, models, fixedRoute, strategyText,
+        guideMode: parsedGuide ? 'rules' : 'free',
+        guideRules: parsedGuide ? parsedGuide.rules : [],
+        guideFallback: parsedGuide ? parsedGuide.fallback : '',
+        dirty: false, legacy: Boolean(strategy && strategy.type === 'inherit'), converting: Boolean(strategy && strategy.type === 'inherit') };
+    }
+    // 结构化选择说明直接编译进 strategyText：存储 schema 与宿主注入逻辑不变，
+    // 同一文本既能被 Agent 阅读，也能被编辑器完整解析回规则表单。
+    const GUIDE_BEGIN = '【选择规则 v1】';
+    const GUIDE_END = '【/选择规则】';
+    /**
+     * 清理规则片段中的换行与结构字符，避免用户输入破坏可解析格式。
+     *
+     * @param {unknown} value 场景或兜底说明的原始输入。
+     * @returns {string} 单行、不含结构标记的文本。
+     */
+    function sanitizeGuidePart(value) {
+      return String(value ?? '').replace(/[\r\n]+/g, ' ').replace(/[→【】]/g, '').trim();
+    }
+    /**
+     * 把结构化规则编译为注入用的选择说明文本。
+     *
+     * @param {Array<{scene:string, models:Array<{provider:string, model:string}>}>} rules 有序规则；模型数组顺序即优先级。
+     * @param {string} fallback 无规则命中时的兜底说明。
+     * @returns {string} 带 GUIDE_BEGIN/END 标记、可解析的完整说明文本。
+     */
+    function composeGuideText(rules, fallback) {
+      // 1. 逐条规则生成「序号. 场景 → provider/model > provider/model」。
+      const lines = (rules || []).map((rule, index) => {
+        const scene = sanitizeGuidePart(rule.scene) || '未命名场景';
+        const routes = (rule.models || []).map((route) => `${route.provider}/${route.model}`);
+        return `${index + 1}. ${scene} → ${routes.join(' > ')}`;
+      });
+      // 2. 兜底说明为空时给出明确默认语义，不让 Agent 猜测。
+      const tail = sanitizeGuidePart(fallback) || '无规则命中时在候选子集内自行决策。';
+      // 3. 包裹结构标记后返回，解析端依赖标记识别结构化文本。
+      return [GUIDE_BEGIN, '按顺序匹配任务场景；命中后优先使用「>」左侧模型，均不可用时在候选子集内自行决策。', ...lines, `兜底：${tail}`, GUIDE_END].join('\n');
+    }
+    /**
+     * 解析 composeGuideText 生成的说明文本；非结构化文本返回 null（走自由文本编辑）。
+     *
+     * @param {unknown} text 策略里保存的 strategyText。
+     * @returns {{rules:Array<{scene:string, models:Array<{provider:string, model:string}>}>, fallback:string}|null} 解析结果或 null。
+     */
+    function parseGuideText(text) {
+      // 1. 只接受完整由编译器生成的文本，混排内容一律回退自由文本。
+      if (typeof text !== 'string' || !text.startsWith(GUIDE_BEGIN)) return null;
+      const end = text.indexOf(GUIDE_END);
+      if (end < 0) return null;
+      const lines = text.slice(GUIDE_BEGIN.length, end).split('\n').map((line) => line.trim()).filter(Boolean);
+      const rules = [];
+      let fallback = '';
+      // 2. 逐行解析：固定说明行跳过，兜底行与规则行分别提取。
+      for (const line of lines) {
+        if (line.startsWith('按顺序匹配')) continue;
+        const fb = line.match(/^兜底：(.*)$/);
+        if (fb) { fallback = fb[1]; continue; }
+        const match = line.match(/^(\d+)\. (.*?) → (.+)$/);
+        if (!match) return null;
+        // 2.1 路由按「 > 」拆成有序数组，第一个 / 之前是 provider。
+        const models = match[3].split(' > ').map((pair) => {
+          const slash = pair.indexOf('/');
+          return slash > 0 ? { provider: pair.slice(0, slash), model: pair.slice(slash + 1) } : null;
+        });
+        if (!models.length || models.some((route) => !route || !route.provider || !route.model)) return null;
+        rules.push({ scene: match[2], models });
+      }
+      return { rules, fallback };
     }
     function assertSnapshotShape(snap, sessionId) {      if (!snap || typeof snap !== 'object' || snap.sessionId !== sessionId) {
         const error = new Error(snap && snap.sessionId ? 'stale-session' : 'bad-snapshot');
@@ -494,7 +579,7 @@ window.__ModuleLoader__.load({
 
         function PolicySession({ sessionId, t, visible, tabSignal }) {
           const prefix = useId();
-          const [ui, setUi] = useState({ snap: null, page: 'strategies', detail: null, poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, poolQuery: '', choiceQuery: '', busy: null, error: null, notice: null, noticeKind: '', conflict: false, mustRefresh: false, lastActiveId: null, lastDefault: null });
+          const [ui, setUi] = useState({ snap: null, page: 'strategies', detail: null, poolDraft: null, limitDraft: null, strategyDraft: null, modelDraft: null, poolQuery: '', choiceQuery: '', guidePicker: -1, guideQuery: '', busy: null, error: null, notice: null, noticeKind: '', conflict: false, mustRefresh: false, lastActiveId: null, lastDefault: null });
           const uiRef = useRef(ui);
           const operation = useRef(null);
           const serial = useRef(0);
@@ -732,10 +817,10 @@ window.__ModuleLoader__.load({
             const snap = uiRef.current.snap;
             const strategy = id ? snap.management.strategies.find((row) => row.id === id) : null;
             if (id && !strategy) return;
-            commit((state) => ({ ...state, detail: { kind: 'strategy', id: strategy?.id || null }, strategyDraft: strategyDraftOf(strategy), error: null, notice: null, noticeKind: '' }));
+            commit((state) => ({ ...state, detail: { kind: 'strategy', id: strategy?.id || null }, strategyDraft: strategyDraftOf(strategy), guidePicker: -1, guideQuery: '', error: null, notice: null, noticeKind: '' }));
           }
           function closeDetail() {
-            commit((state) => ({ ...state, detail: null, strategyDraft: null, modelDraft: null, error: null, notice: null, noticeKind: '' }));
+            commit((state) => ({ ...state, detail: null, strategyDraft: null, modelDraft: null, guidePicker: -1, guideQuery: '', error: null, notice: null, noticeKind: '' }));
           }
           function discardIfDirty() {
             if (uiRef.current.strategyDraft?.dirty || uiRef.current.modelDraft?.dirty) return window.confirm(t('discard'));
@@ -749,6 +834,65 @@ window.__ModuleLoader__.load({
 
           function editStrategyField(field, value) {
             commit((state) => state.strategyDraft ? { ...state, strategyDraft: { ...state.strategyDraft, [field]: value, dirty: true } } : state);
+          }
+          /**
+           * 更新结构化选择说明并同步重编译 strategyText，保持单一事实源。
+           *
+           * @param {object} update 要合并进草稿的 guideRules / guideFallback 等字段。
+           */
+          function editGuide(update) {
+            commit((state) => {
+              const draft = state.strategyDraft;
+              if (!draft) return state;
+              const next = { ...draft, ...update, guideMode: 'rules' };
+              next.strategyText = composeGuideText(next.guideRules, next.guideFallback);
+              next.dirty = true;
+              return { ...state, strategyDraft: next };
+            });
+          }
+          /** 切换说明编辑模式；切到结构化时优先解析现有文本，无法解析则把原文保留为兜底说明。 */
+          function setGuideMode(mode) {
+            commit((state) => {
+              const draft = state.strategyDraft;
+              if (!draft || draft.guideMode === mode) return state;
+              if (mode === 'free') return { ...state, strategyDraft: { ...draft, guideMode: 'free' } };
+              const parsed = parseGuideText(draft.strategyText);
+              const guideRules = parsed ? parsed.rules : (draft.guideRules || []);
+              const guideFallback = parsed ? parsed.fallback : (draft.guideFallback || (draft.guideRules?.length ? '' : draft.strategyText));
+              return { ...state, strategyDraft: { ...draft, guideMode: 'rules', guideRules, guideFallback, strategyText: composeGuideText(guideRules, guideFallback), dirty: true } };
+            });
+          }
+          /** 在指定规则末尾追加或移除一个候选模型；数组顺序即优先级。 */
+          function toggleRuleModel(ruleIndex, key) {
+            const draft = uiRef.current.strategyDraft;
+            if (!draft) return;
+            const [provider, model] = JSON.parse(key);
+            const rules = (draft.guideRules || []).map((rule, index) => {
+              if (index !== ruleIndex) return rule;
+              const exists = rule.models.some((route) => route.provider === provider && route.model === model);
+              return { ...rule, models: exists ? rule.models.filter((route) => !(route.provider === provider && route.model === model)) : [...rule.models, { provider, model }] };
+            });
+            editGuide({ guideRules: rules });
+          }
+          /** 新增一条空规则并展开它的模型选择面板。 */
+          function addGuideRule() {
+            const rules = [...(uiRef.current.strategyDraft?.guideRules || []), { scene: '', models: [] }];
+            editGuide({ guideRules: rules });
+            commit((state) => ({ ...state, guidePicker: rules.length - 1, guideQuery: '' }));
+          }
+          /** 删除指定序号的规则。 */
+          function removeGuideRule(index) {
+            editGuide({ guideRules: (uiRef.current.strategyDraft?.guideRules || []).filter((_, i) => i !== index) });
+            commit((state) => ({ ...state, guidePicker: -1 }));
+          }
+          /** 上移或下移规则，delta 仅取 -1 / 1。 */
+          function moveGuideRule(index, delta) {
+            const rules = [...(uiRef.current.strategyDraft?.guideRules || [])];
+            const target = index + delta;
+            if (target < 0 || target >= rules.length) return;
+            [rules[index], rules[target]] = [rules[target], rules[index]];
+            editGuide({ guideRules: rules });
+            commit((state) => ({ ...state, guidePicker: state.guidePicker === index ? target : state.guidePicker === target ? index : state.guidePicker }));
           }
           function switchType(type) {
             commit((state) => {
@@ -1140,9 +1284,8 @@ window.__ModuleLoader__.load({
                   switchControl('policyToggle', Boolean(active), !editable, active ? t('policyLabelOn') : t('policyLabelOff'), (checked) => { if (checked) restoreActive(); else closeActive(); })),
                 h('p', null, active
                   ? fmt(t('activeLine'), { name: active.snapshot.name, type: typeLabel(active.snapshot.type), target: active.snapshot.type === 'fixed' ? activeTarget : fmt(t('targetAuto'), { count: activeTarget }) })
-                  : t('closedSummary'))),
-              h('section', { className: 'lezsp-status', 'aria-labelledby': idFor('defaultTitle') },
-                h('div', { className: 'lezsp-between lezsp-row' },
+                  : t('closedSummary')),
+                h('div', { className: 'lezsp-between lezsp-row lezsp-status-divider' },
                   h('h2', { id: idFor('defaultTitle'), tabIndex: -1 }, t('defaultTitle')),
                   switchControl('defaultToggle', Boolean(defaultValue), !editable, defaultValue ? t('defaultLabelOn') : t('defaultLabelOff'), toggleDefault)),
                 h('p', null, defaultText),
@@ -1239,6 +1382,72 @@ window.__ModuleLoader__.load({
             const typeChoices = h('div', { className: 'lezsp-seg', role: 'group', 'aria-label': t('typeLabel') },
               h('button', { type: 'button', 'aria-pressed': draft.type === 'fixed', disabled: !editable, onClick: () => switchType('fixed') }, t('typeFixed')),
               h('button', { type: 'button', 'aria-pressed': draft.type === 'auto', disabled: !editable, onClick: () => switchType('auto') }, t('typeAuto')));
+            /**
+             * 选择说明编辑器：结构化规则（场景→有序多模型）与自由文本双模式。
+             * 规则模式的选模型面板内联展开，带搜索与 provider 分组，不使用任何弹层。
+             */
+            const guideEditor = () => {
+              const rules = draft.guideRules || [];
+              const candidateKeys = [...draft.models];
+              const modeSeg = h('div', { className: 'lezsp-seg', role: 'group', 'aria-label': t('textLabel') },
+                h('button', { type: 'button', 'aria-pressed': draft.guideMode === 'rules', disabled: !editable, onClick: () => setGuideMode('rules') }, t('guideStruct')),
+                h('button', { type: 'button', 'aria-pressed': draft.guideMode !== 'rules', disabled: !editable, onClick: () => setGuideMode('free') }, t('guideFree')));
+              const freeEditor = h('label', { className: 'lezsp-field', htmlFor: idFor('sText') },
+                h('span', null, t('guideFreeLabel')),
+                h('textarea', { id: idFor('sText'), rows: 4, maxLength: 2000, value: draft.strategyText, disabled: !editable, 'aria-invalid': errors.text ? 'true' : undefined, onChange: (event) => editStrategyField('strategyText', event.target.value) }),
+                h('small', { className: 'lezsp-muted' }, fmt(t('textCount'), { count: draft.strategyText.length, max: 2000 }) + ' · ' + t('textHint')));
+              // 单条规则的内联选模型面板：仅列当前候选子集，勾选顺序即优先级。
+              const pickerPanel = (rule, index) => {
+                if (ui.guidePicker !== index) return null;
+                const visibleKeys = candidateKeys.filter((key) => matchesModelQuery(choiceLabel(key), ui.guideQuery));
+                return h('div', { className: 'lezsp-guide-picker' },
+                  h('label', { className: 'lezsp-field', htmlFor: idFor(`guideSearch-${index}`) },
+                    h('span', null, t('searchModels')),
+                    h('input', { id: idFor(`guideSearch-${index}`), type: 'search', value: ui.guideQuery, disabled: !editable, placeholder: t('searchModelsPlaceholder'), onChange: (event) => commit((state) => ({ ...state, guideQuery: event.target.value })) })),
+                  h('p', { className: 'lezsp-muted' }, t('guidePickerHint')),
+                  visibleKeys.length
+                    ? h('div', { className: 'lezsp-stack' }, [...groupByProvider(visibleKeys.map((key) => ({ key, ...choiceLabel(key) })))].map(([provider, rows]) => h('section', { key: provider, className: 'lezsp-provider-group', 'aria-label': provider },
+                      h('h3', { className: 'lezsp-provider-title' }, provider, h('span', { className: 'lezsp-count' }, rows.length)),
+                      h('div', { className: 'lezsp-stack' }, rows.map(({ key, name }) => {
+                        const order = rule.models.findIndex((route) => keyOf(route) === key);
+                        const checked = order >= 0;
+                        return h('label', { key, className: `lezsp-model-choice ${checked ? 'checked' : ''}` },
+                          h('input', { type: 'checkbox', checked, disabled: !editable, 'aria-label': `${t('guidePickModel')}: ${name}`, onChange: () => toggleRuleModel(index, key) }),
+                          h('span', { className: 'lezsp-choice-body' },
+                            h('span', { className: 'lezsp-choice-name' }, name, ' - ', h('span', { className: 'lezsp-muted' }, provider)),
+                            checked ? h('span', { className: 'lezsp-muted' }, fmt(t('guideOrder'), { order: order + 1 })) : null));
+                      })))))
+                    : h('div', { className: 'lezsp-empty' }, t(candidateKeys.length ? 'noModelMatches' : 'errModels')));
+              };
+              const rulesEditor = h('div', null,
+                h('p', { className: 'lezsp-muted' }, t('guideRulesHint')),
+                rules.map((rule, index) => h('div', { key: index, className: 'lezsp-guide-rule' },
+                  h('div', { className: 'lezsp-row' },
+                    h('span', { className: 'lezsp-count' }, `${index + 1}.`),
+                    h('input', { type: 'text', value: rule.scene, maxLength: 120, disabled: !editable, placeholder: t('guideScenePlaceholder'), 'aria-label': t('guideScenePlaceholder'), onChange: (event) => editGuide({ guideRules: rules.map((row, i) => i === index ? { ...row, scene: event.target.value } : row) }) }),
+                    button('▲', () => moveGuideRule(index, -1), { className: 'lezsp-small', disabled: !editable || index === 0, aria: t('guideMoveUp') }),
+                    button('▼', () => moveGuideRule(index, 1), { className: 'lezsp-small', disabled: !editable || index === rules.length - 1, aria: t('guideMoveDown') }),
+                    button('✕', () => removeGuideRule(index), { className: 'lezsp-small', disabled: !editable, aria: t('guideRemoveRule') })),
+                  h('div', { className: 'lezsp-row lezsp-guide-chips' },
+                    rule.models.map((route, k) => h('span', { key: keyOf(route), className: 'lezsp-chip' },
+                      `${k + 1}) ${modelName(route)}`,
+                      button('✕', () => toggleRuleModel(index, keyOf(route)), { className: 'lezsp-chip-x', disabled: !editable, aria: t('guideRemoveModel') }))),
+                    button(t('guidePickModel'), () => commit((state) => ({ ...state, guidePicker: state.guidePicker === index ? -1 : index, guideQuery: '' })), { className: 'lezsp-small', disabled: !editable || !candidateKeys.length })),
+                  pickerPanel(rule, index))),
+                button(t('guideAddRule'), addGuideRule, { className: 'lezsp-small', disabled: !editable }),
+                h('label', { className: 'lezsp-field', htmlFor: idFor('guideFallback') },
+                  h('span', null, t('guideFallback')),
+                  h('input', { id: idFor('guideFallback'), type: 'text', maxLength: 500, value: draft.guideFallback || '', disabled: !editable, onChange: (event) => editGuide({ guideFallback: event.target.value }) })),
+                h('div', { className: 'lezsp-field' },
+                  h('span', null, t('guidePreview')),
+                  h('pre', null, draft.strategyText),
+                  h('small', { className: 'lezsp-muted' }, t('guidePreviewHint'))));
+              return h('fieldset', null,
+                h('legend', null, t('textLabel')),
+                modeSeg,
+                draft.guideMode === 'rules' ? rulesEditor : freeEditor,
+                errors.text ? h('small', { className: 'lezsp-error' }, errors.text) : null);
+            };
             return h('section', { 'aria-label': t('editStrategyTitle') },
               h('div', { className: 'lezsp-between lezsp-row' },
                 button(t('back'), () => { if (discardIfDirty()) closeDetail(); }, { className: 'lezsp-link' }),
@@ -1263,11 +1472,7 @@ window.__ModuleLoader__.load({
                   choiceRows(draft.type) || h('p', { className: 'lezsp-muted' }, t(draft.type === 'fixed' ? 'noPoolFixed' : 'noPoolAuto')),
                   errors.fixed ? h('small', { className: 'lezsp-error' }, errors.fixed) : null,
                   errors.models ? h('small', { className: 'lezsp-error' }, errors.models) : null),
-                draft.type === 'auto' ? h('label', { className: 'lezsp-field', htmlFor: idFor('sText') },
-                  h('span', null, t('textLabel')),
-                  h('textarea', { id: idFor('sText'), rows: 4, maxLength: 2000, value: draft.strategyText, disabled: !editable, 'aria-invalid': errors.text ? 'true' : undefined, onChange: (event) => editStrategyField('strategyText', event.target.value) }),
-                  h('small', { className: 'lezsp-muted' }, fmt(t('textCount'), { count: draft.strategyText.length, max: 2000 }) + ' · ' + t('textHint')),
-                  errors.text ? h('small', { className: 'lezsp-error' }, errors.text) : null) : null,
+                draft.type === 'auto' ? guideEditor() : null,
                 ui.error?.fields ? h('div', { className: 'lezsp-banner err', role: 'alert' }, t('formError')) : null,
                 h('div', { className: 'lezsp-form-actions' },
                   h('button', { type: 'submit', className: 'lezsp-primary', disabled: !editable }, t('saveStrategy')),
