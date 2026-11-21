@@ -754,11 +754,11 @@ window.__ModuleLoader__.load({
                 }
                 if (!kept) return { ...state, ...patch, ...draftsFrom(snap) };
                 if (reset.strategy) {
-                  const draft = state.strategyDraft;
-                  const saved = (draft?.id ? snap.management.strategies.find((row) => row.id === draft.id) : null)
-                    || snap.management.strategies.find((row) => row.name === (draft?.name || '').trim());
-                  patch.strategyDraft = saved ? strategyDraftOf(saved) : null;
-                  patch.detail = saved ? { kind: 'strategy', id: saved.id } : null;
+                  // 保存成功后返回策略库列表并展示顶部提示，避免停留在编辑页"看不出是否保存"。
+                  patch.strategyDraft = null;
+                  patch.detail = null;
+                  patch.guidePicker = -1;
+                  patch.guideQuery = '';
                 }
                 if (reset.pool) patch.poolDraft = draftsFrom(snap).poolDraft;
                 if (reset.model) {
@@ -822,7 +822,11 @@ window.__ModuleLoader__.load({
           }
           const mutation = (action, extra, reset) => {
             const snap = uiRef.current.snap;
-            if (!snap || !snap.canEdit || uiRef.current.conflict || uiRef.current.mustRefresh) return;
+            if (!snap) return;
+            // 不能静默 return：状态不允许写入时必须给出可见原因，否则用户点了像没点。
+            if (!snap.canEdit) { warn(t('readOnly')); return; }
+            if (uiRef.current.conflict) { warn(t('conflictHelp')); return; }
+            if (uiRef.current.mustRefresh) { warn(t('mustRefresh')); return; }
             const blocked = capacityBlockMessage(action);
             if (blocked) {
               commit((state) => ({ ...state, error: { message: blocked }, notice: null }));
