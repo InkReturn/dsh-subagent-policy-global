@@ -1,0 +1,3 @@
+- insert:
+    - id: lez-subagent-policy-global
+      name: '@local/dsh-subagent-policy-global'

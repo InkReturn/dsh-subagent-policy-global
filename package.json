@@ -1,0 +1,81 @@
+{
+  "name": "@local/dsh-subagent-policy-global",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Global subagent policy and searchable provider-grouped model pool for DeepSeek Harness; forked from @lienze/dsh-subagent-model-policy 0.3.3.",
+  "author": "lez (upstream), InkReturn (fork)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InkReturn/dsh-subagent-policy-global.git"
+  },
+  "homepage": "https://github.com/InkReturn/dsh-subagent-policy-global#readme",
+  "bugs": {
+    "url": "https://github.com/InkReturn/dsh-subagent-policy-global/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "subagent",
+    "subagent-policy",
+    "subagent-model-selection",
+    "model-selection",
+    "model-policy",
+    "thinking-level",
+    "delegation",
+    "web-ui",
+    "i18n",
+    "子智能体",
+    "模型选择",
+    "子智能体策略"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check policy.js && node --check management.js && node --check client.js",
+    "test": "node --test test/*.test.js"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "policy.js",
+    "management.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README_en.md",
+    "CHANGELOG.md"
+  ],
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.1",
+    "node": ">=24.12.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-api-remotes"
+      ]
+    }
+  }
+}
